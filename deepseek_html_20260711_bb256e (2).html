@@ -1,0 +1,3353 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MIIFIIT — неоновый фитнес</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        /* ============================================================================
+           ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ (тема, неон)
+           ============================================================================ */
+        :root {
+            --neon-rgb: 0, 255, 157;
+            --neon-color: rgb(var(--neon-rgb));
+            --neon-glow: 0 0 15px rgba(var(--neon-rgb), 0.7);
+            --neon-glow-strong: 0 0 30px rgba(var(--neon-rgb), 1);
+
+            --bg-primary: #000000;
+            --bg-secondary: #0a0a0a;
+            --bg-card: rgba(20, 20, 30, 0.85);
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --border-color: #222222;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+            --cal-green: #00ff9d;
+            --cal-yellow: #ffcc00;
+            --cal-red: #ff4757;
+            --circle-empty: rgba(255,255,255,0.1);
+        }
+
+        body.light {
+            --bg-primary: #f5f5f7;
+            --bg-secondary: #e8e8ed;
+            --bg-card: rgba(255, 255, 255, 0.7);
+            --text-primary: #000000;
+            --text-secondary: #333333;
+            --border-color: #dddddd;
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        /* ============================================================================
+           ЗАГРУЗОЧНЫЙ ЭКРАН
+           ============================================================================ */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+        .logo-container {
+            position: relative;
+            width: 320px;
+            height: 140px;
+            overflow: hidden;
+        }
+        .logo-text {
+            font-size: 64px;
+            font-weight: 900;
+            background: linear-gradient(90deg, var(--neon-color) 0%, #fff 25%, var(--neon-color) 50%, #fff 75%, var(--neon-color) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 20px var(--neon-color), 0 0 40px var(--neon-color);
+            letter-spacing: 6px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: logoAppear 2s ease-out forwards;
+        }
+        .logo-subtitle {
+            color: var(--neon-color);
+            font-size: 18px;
+            margin-top: 12px;
+            letter-spacing: 6px;
+            opacity: 0;
+            animation: subtitleAppear 1s ease-out 1.2s forwards;
+            text-shadow: 0 0 10px var(--neon-color);
+        }
+        .loader-dots {
+            display: flex;
+            margin-top: 40px;
+            gap: 18px;
+        }
+        .dot {
+            width: 16px;
+            height: 16px;
+            background: var(--neon-color);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 25px var(--neon-color);
+        }
+        .dot:nth-child(2) { animation-delay: 0.3s; }
+        .dot:nth-child(3) { animation-delay: 0.6s; }
+
+        @keyframes logoAppear {
+            0% { opacity: 0; transform: translateY(30px) scale(0.9); text-shadow: 0 0 0 transparent; }
+            40% { opacity: 1; transform: translateY(0) scale(1.05); text-shadow: 0 0 50px var(--neon-color); }
+            100% { opacity: 1; transform: translateY(0) scale(1); text-shadow: 0 0 30px var(--neon-color); }
+        }
+        @keyframes subtitleAppear {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.5); opacity: 1; }
+        }
+        .loader-hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* ============================================================================
+           БАЗОВЫЕ СТИЛИ
+           ============================================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: var(--font-family);
+            -webkit-tap-highlight-color: transparent;
+            transition: background-color 0.3s, color 0.2s, border-color 0.2s, box-shadow 0.3s, transform 0.2s;
+        }
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            max-width: 500px;
+            margin: 0 auto;
+            padding-bottom: 120px;
+            min-height: 100vh;
+            position: relative;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(var(--neon-rgb), 0.1) 0%, transparent 30%),
+                radial-gradient(circle at 90% 80%, rgba(var(--neon-rgb), 0.07) 0%, transparent 30%);
+            overflow-x: hidden;
+        }
+        .header {
+            padding: 20px 16px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid rgba(var(--neon-rgb), 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            backdrop-filter: blur(15px);
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-color), transparent);
+            box-shadow: var(--neon-glow);
+        }
+        .header h1 {
+            font-size: 30px;
+            font-weight: 800;
+            background: linear-gradient(90deg, var(--neon-color), #fff, var(--neon-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: var(--neon-glow);
+            letter-spacing: 2px;
+            animation: glow 4s ease-in-out infinite alternate;
+        }
+        @keyframes glow {
+            from { text-shadow: 0 0 15px rgba(var(--neon-rgb), 0.7), 0 0 30px rgba(var(--neon-rgb), 0.4); }
+            to { text-shadow: 0 0 30px rgba(var(--neon-rgb), 1), 0 0 60px rgba(var(--neon-rgb), 0.7); }
+        }
+        .date-display {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            padding: 6px 16px;
+            background: rgba(var(--neon-rgb), 0.15);
+            border-radius: 40px;
+            border: 1px solid rgba(var(--neon-rgb), 0.4);
+            box-shadow: 0 0 20px rgba(var(--neon-rgb), 0.3);
+            backdrop-filter: blur(5px);
+            white-space: nowrap;
+        }
+        .settings-icon {
+            font-size: 26px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: 0.3s;
+            margin-left: 12px;
+        }
+        .settings-icon:hover {
+            color: var(--neon-color);
+            transform: rotate(60deg) scale(1.2);
+            text-shadow: var(--neon-glow-strong);
+        }
+        .container {
+            padding: 18px 14px;
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ============================================================================
+           КАРТОЧКИ
+           ============================================================================ */
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 24px 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(var(--neon-rgb), 0.2);
+            box-shadow: var(--glass-shadow), 0 0 20px rgba(var(--neon-rgb), 0.15);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 35px rgba(var(--neon-rgb), 0.3);
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-color), transparent);
+            box-shadow: var(--neon-glow);
+        }
+        .card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 22px;
+            color: var(--neon-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-shadow: 0 0 15px rgba(var(--neon-rgb), 0.7);
+        }
+        .card h2 i {
+            font-size: 1.7rem;
+            text-shadow: 0 0 15px rgba(var(--neon-rgb), 0.9);
+        }
+
+        /* ============================================================================
+           ПОЛЯ ВВОДА И КНОПКИ (общие)
+           ============================================================================ */
+        .input-group {
+            margin-bottom: 22px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 500;
+        }
+        .input-group label i {
+            margin-right: 8px;
+            color: var(--neon-color);
+        }
+        .input-field, .date-picker, select {
+            width: 100%;
+            padding: 16px 18px;
+            background-color: rgba(0,0,0,0.5);
+            border: 1px solid rgba(var(--neon-rgb), 0.3);
+            border-radius: 50px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        .input-field:focus, .date-picker:focus, select:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 25px rgba(var(--neon-rgb), 0.7);
+            background-color: rgba(var(--neon-rgb), 0.15);
+        }
+        textarea.input-field {
+            min-height: 100px;
+            border-radius: 25px;
+            resize: vertical;
+        }
+        .btn {
+            padding: 16px 24px;
+            border: none;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            background: rgba(var(--neon-rgb), 0.1);
+            color: var(--neon-color);
+            border: 1px solid rgba(var(--neon-rgb), 0.4);
+            backdrop-filter: blur(5px);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        .btn:hover::before {
+            width: 400px;
+            height: 400px;
+        }
+        .btn:hover {
+            background: rgba(var(--neon-rgb), 0.25);
+            box-shadow: 0 0 35px rgba(var(--neon-rgb), 0.8);
+            transform: translateY(-3px);
+        }
+        .btn-primary {
+            background: linear-gradient(145deg, var(--neon-color), rgba(var(--neon-rgb), 0.7));
+            color: #000;
+            border: none;
+            font-weight: 800;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 0 45px rgba(var(--neon-rgb), 1);
+        }
+        .btn-rest {
+            background: rgba(255, 71, 87, 0.15);
+            color: #ff4757;
+            border: 1px solid rgba(255,71,87,0.3);
+        }
+        .btn-rest:hover {
+            background: rgba(255,71,87,0.3);
+            box-shadow: 0 0 30px rgba(255,71,87,0.6);
+        }
+        .btn-warning {
+            background: rgba(255, 193, 7, 0.15);
+            color: #ffc107;
+            border: 1px solid rgba(255,193,7,0.3);
+        }
+        .btn-warning:hover {
+            background: rgba(255,193,7,0.3);
+            box-shadow: 0 0 30px rgba(255,193,7,0.6);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-primary);
+            border: 1px solid rgba(var(--neon-rgb), 0.3);
+        }
+        .action-buttons {
+            display: flex;
+            gap: 14px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+
+        /* ============================================================================
+           СТАТИСТИКА (плитки)
+           ============================================================================ */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .stat-item {
+            background: rgba(var(--neon-rgb), 0.05);
+            border: 1px solid rgba(var(--neon-rgb), 0.25);
+            border-radius: 24px;
+            padding: 22px 16px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            transition: 0.3s;
+        }
+        .stat-item:hover {
+            background: rgba(var(--neon-rgb), 0.12);
+            box-shadow: 0 0 25px rgba(var(--neon-rgb), 0.25);
+            transform: translateY(-3px);
+        }
+        .stat-value {
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: var(--neon-color);
+            margin-bottom: 8px;
+            text-shadow: var(--neon-glow);
+        }
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        .history-item {
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(var(--neon-rgb), 0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-item:last-child { border-bottom: none; }
+        .history-date { color: var(--text-secondary); font-size: 0.95rem; }
+        .history-value { color: var(--neon-color); font-weight: 700; text-shadow: 0 0 5px rgba(var(--neon-rgb), 0.5); }
+
+        /* ============================================================================
+           НИЖНЕЕ МЕНЮ (5 пунктов, переставлены)
+           ============================================================================ */
+        .bottom-nav {
+            position: fixed;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 36px);
+            max-width: 540px;
+            background: rgba(var(--bg-secondary), 0.9);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(var(--neon-rgb), 0.4);
+            border-radius: 70px;
+            padding: 8px 10px;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(var(--neon-rgb), 0.2);
+            z-index: 100;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 0.6rem;
+            padding: 6px 0;
+            flex: 1;
+            border-radius: 40px;
+            transition: 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+            background: transparent;
+        }
+        .nav-item i {
+            font-size: 1.4rem;
+            margin-bottom: 2px;
+            transition: 0.3s;
+        }
+        .nav-item span { 
+            font-size: 0.6rem; 
+            font-weight: 600; 
+            letter-spacing: 0.3px;
+            opacity: 0.8;
+        }
+        .nav-item.active {
+            color: var(--neon-color);
+            background: rgba(var(--neon-rgb), 0.15);
+            box-shadow: 0 0 20px rgba(var(--neon-rgb), 0.3);
+        }
+        .nav-item.active i { 
+            text-shadow: 0 0 20px var(--neon-color);
+        }
+        .nav-item:not(.active):hover {
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* ============================================================================
+           МОДАЛЬНЫЕ ОКНА
+           ============================================================================ */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(12px);
+        }
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 40px;
+            padding: 28px;
+            width: 92%;
+            max-width: 420px;
+            border: 1px solid rgba(var(--neon-rgb), 0.3);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.9), 0 0 50px rgba(var(--neon-rgb), 0.2);
+            animation: modalAppear 0.4s ease;
+        }
+        @keyframes modalAppear {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-title { color: var(--neon-color); font-size: 1.8rem; text-shadow: var(--neon-glow); }
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 36px;
+            cursor: pointer;
+            transition: 0.3s;
+            line-height: 1;
+        }
+        .close-btn:hover { color: var(--neon-color); transform: rotate(90deg) scale(1.1); }
+
+        /* Переключатели */
+        .theme-switch, .language-switch {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .theme-btn, .lang-btn {
+            flex: 1;
+            padding: 14px;
+            border-radius: 40px;
+            border: 1px solid rgba(var(--neon-rgb), 0.3);
+            background: transparent;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .theme-btn.active, .lang-btn.active {
+            background: rgba(var(--neon-rgb), 0.2);
+            color: var(--neon-color);
+            border-color: var(--neon-color);
+            box-shadow: 0 0 20px rgba(var(--neon-rgb), 0.3);
+        }
+        .color-dot {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 8px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: 0.3s;
+            box-shadow: 0 0 12px rgba(0,0,0,0.5);
+        }
+        .color-dot:hover, .color-dot.active {
+            border-color: white;
+            transform: scale(1.15);
+            box-shadow: 0 0 30px currentColor;
+        }
+        .switch {
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+            position: relative;
+            cursor: pointer;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255,255,255,0.15);
+            border-radius: 30px;
+            border: 1px solid rgba(var(--neon-rgb), 0.2);
+            transition: 0.3s;
+        }
+        .slider::before {
+            content: '';
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 2px;
+            background-color: var(--neon-color);
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 0 12px var(--neon-color);
+        }
+        input:checked + .slider::before {
+            transform: translateX(24px);
+        }
+
+        /* ============================================================================
+           МИНИМАЛИСТИЧНЫЙ СТИЛЬ ДЛЯ ЭКРАНА ТРЕНИРОВОК (уменьшены кнопки)
+           ============================================================================ */
+        .workout-minimal .exercise-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(var(--neon-rgb), 0.08);
+        }
+        .workout-minimal .exercise-row:last-child {
+            border-bottom: none;
+        }
+        .workout-minimal .exercise-row .icon {
+            width: 28px;
+            text-align: center;
+            color: var(--neon-color);
+            font-size: 1.1rem;
+        }
+        .workout-minimal .exercise-row .label {
+            flex: 1;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .workout-minimal .exercise-row input[type="number"] {
+            width: 80px;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(var(--neon-rgb), 0.2);
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-align: right;
+            transition: 0.3s;
+        }
+        .workout-minimal .exercise-row input[type="number"]:focus {
+            outline: none;
+            border-bottom-color: var(--neon-color);
+            box-shadow: 0 2px 8px rgba(var(--neon-rgb), 0.15);
+        }
+        .workout-minimal .exercise-row input[type="number"]::-webkit-inner-spin-button {
+            opacity: 0.5;
+        }
+        .workout-minimal .exercise-row .unit {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            min-width: 30px;
+            text-align: right;
+        }
+
+        .workout-minimal .date-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+        .workout-minimal .date-row input[type="date"] {
+            flex: 1;
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(var(--neon-rgb), 0.15);
+            border-radius: 30px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+        .workout-minimal .date-row input[type="date"]:focus {
+            outline: none;
+            border-color: var(--neon-color);
+        }
+        .workout-minimal .date-row .btn-search {
+            background: none;
+            border: 1px solid rgba(var(--neon-rgb), 0.2);
+            color: var(--neon-color);
+            padding: 10px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 1rem;
+        }
+        .workout-minimal .date-row .btn-search:hover {
+            background: rgba(var(--neon-rgb), 0.1);
+            border-color: var(--neon-color);
+        }
+
+        .workout-minimal .note-row {
+            margin: 16px 0 10px;
+        }
+        .workout-minimal .note-row input {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(var(--neon-rgb), 0.1);
+            border-radius: 30px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: 0.3s;
+        }
+        .workout-minimal .note-row input:focus {
+            outline: none;
+            border-color: var(--neon-color);
+        }
+        .workout-minimal .note-row input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        /* Уменьшенные кнопки */
+        .workout-minimal .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        .workout-minimal .actions .btn {
+            flex: 1;
+            min-width: 60px;
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            border-radius: 40px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(var(--neon-rgb), 0.15);
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        .workout-minimal .actions .btn-primary {
+            background: var(--neon-color);
+            color: #000;
+            border: none;
+            flex: 2;
+        }
+        .workout-minimal .actions .btn-rest {
+            border-color: #ff4757;
+            color: #ff4757;
+            background: rgba(255,71,87,0.08);
+        }
+        .workout-minimal .actions .btn-rest:hover {
+            background: rgba(255,71,87,0.2);
+        }
+        .workout-minimal .actions .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(var(--neon-rgb), 0.15);
+        }
+
+        .week-mini {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .week-mini .item {
+            text-align: center;
+            padding: 12px 4px;
+            background: rgba(var(--neon-rgb), 0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(var(--neon-rgb), 0.06);
+        }
+        .week-mini .item .value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--neon-color);
+            line-height: 1.2;
+        }
+        .week-mini .item .label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+        .week-mini .item i {
+            display: block;
+            font-size: 1.2rem;
+            color: var(--neon-color);
+            opacity: 0.5;
+            margin-bottom: 4px;
+        }
+
+        /* ============================================================================
+           СТИЛИ ДЛЯ КАЛЕНДАРЯ ПИТАНИЯ (минималистичный)
+           ============================================================================ */
+        .calendar-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .calendar-nav button {
+            background: none;
+            border: none;
+            color: var(--neon-color);
+            font-size: 1.6rem;
+            cursor: pointer;
+            padding: 0 8px;
+            transition: 0.3s;
+        }
+        .calendar-nav button:hover {
+            transform: scale(1.2);
+            text-shadow: var(--neon-glow);
+        }
+        .calendar-nav .month-label {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 16px;
+        }
+        .calendar-grid .weekday {
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            padding: 4px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .calendar-grid .day-cell {
+            background: rgba(var(--neon-rgb), 0.04);
+            border: 1px solid rgba(var(--neon-rgb), 0.1);
+            border-radius: 10px;
+            padding: 6px 2px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            min-height: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .calendar-grid .day-cell:hover {
+            background: rgba(var(--neon-rgb), 0.12);
+            border-color: var(--neon-color);
+        }
+        .calendar-grid .day-cell.empty {
+            background: transparent;
+            border: none;
+            cursor: default;
+        }
+        .calendar-grid .day-cell .day-number {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+        .calendar-grid .day-cell .day-calories {
+            font-size: 0.65rem;
+            font-weight: 600;
+            margin-top: 2px;
+            padding: 1px 5px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.25);
+            display: inline-block;
+        }
+        .calendar-grid .day-cell .day-calories.green {
+            color: var(--cal-green);
+            border: 1px solid var(--cal-green);
+        }
+        .calendar-grid .day-cell .day-calories.yellow {
+            color: var(--cal-yellow);
+            border: 1px solid var(--cal-yellow);
+        }
+        .calendar-grid .day-cell .day-calories.red {
+            color: var(--cal-red);
+            border: 1px solid var(--cal-red);
+        }
+        .calendar-grid .day-cell.selected {
+            border: 2px solid var(--neon-color);
+            background: rgba(var(--neon-rgb), 0.2);
+        }
+        .calendar-grid .day-cell.today {
+            border-color: rgba(var(--neon-rgb), 0.6);
+        }
+
+        /* Норма калорий */
+        .norm-field {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 12px 0 6px;
+            flex-wrap: wrap;
+        }
+        .norm-field label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .norm-field input {
+            flex: 1;
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(var(--neon-rgb), 0.2);
+            border-radius: 30px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            max-width: 120px;
+            min-width: 80px;
+        }
+        .norm-field input:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 15px rgba(var(--neon-rgb), 0.3);
+        }
+        .norm-field .btn {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Форма редактирования дня */
+        .edit-container {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .edit-container.active {
+            display: block;
+        }
+        .edit-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .edit-header .back-btn {
+            background: none;
+            border: none;
+            color: var(--neon-color);
+            font-size: 1.6rem;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .edit-header .back-btn:hover {
+            transform: scale(1.1);
+            text-shadow: var(--neon-glow);
+        }
+        .edit-header .edit-date-label {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .meal-form .meal-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .meal-form .meal-row label {
+            flex: 0 0 70px;
+            font-weight: 600;
+            color: var(--neon-color);
+            font-size: 0.85rem;
+        }
+        .meal-form .meal-row input[type="text"],
+        .meal-form .meal-row input[type="number"] {
+            flex: 1;
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(var(--neon-rgb), 0.2);
+            border-radius: 30px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: 0.3s;
+            min-width: 60px;
+        }
+        .meal-form .meal-row input:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 15px rgba(var(--neon-rgb), 0.3);
+        }
+        .meal-form .meal-row input[type="number"] {
+            flex: 0 0 80px;
+        }
+        .day-total {
+            margin: 12px 0 16px;
+            font-size: 1rem;
+            text-align: center;
+        }
+        .day-total span {
+            font-weight: 700;
+            color: var(--neon-color);
+            font-size: 1.3rem;
+        }
+
+        /* График калорий */
+        .chart-container {
+            margin-top: 10px;
+            height: 180px;
+            position: relative;
+        }
+
+        /* ============================================================================
+           СТИЛИ ДЛЯ ВКЛАДКИ "ИИ ТРЕНЕР"
+           ============================================================================ */
+        .ai-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 6px;
+        }
+        .ai-header .ai-icon {
+            font-size: 3rem;
+            color: var(--neon-color);
+            text-shadow: 0 0 30px rgba(var(--neon-rgb), 0.5);
+        }
+        .ai-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+        .ai-sub {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+            font-weight: 400;
+        }
+
+        .ai-welcome {
+            background: rgba(var(--neon-rgb), 0.06);
+            border: 1px solid rgba(var(--neon-rgb), 0.15);
+            border-radius: 24px;
+            padding: 20px 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 30px rgba(var(--neon-rgb), 0.05);
+        }
+        .ai-welcome .greeting {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .ai-welcome .greeting span {
+            color: var(--neon-color);
+        }
+        .ai-welcome .sub {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-top: 4px;
+        }
+
+        .goal-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: rgba(var(--neon-rgb), 0.03);
+            border-radius: 20px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(var(--neon-rgb), 0.08);
+            transition: 0.3s;
+        }
+        .goal-item:hover {
+            background: rgba(var(--neon-rgb), 0.06);
+            border-color: rgba(var(--neon-rgb), 0.2);
+        }
+        .goal-item .circle-wrap {
+            flex-shrink: 0;
+            position: relative;
+            width: 60px;
+            height: 60px;
+        }
+        .goal-item .circle-wrap svg {
+            transform: rotate(-90deg);
+            width: 60px;
+            height: 60px;
+        }
+        .goal-item .circle-wrap .bg {
+            fill: none;
+            stroke: var(--circle-empty);
+            stroke-width: 5;
+        }
+        .goal-item .circle-wrap .progress {
+            fill: none;
+            stroke: var(--neon-color);
+            stroke-width: 5;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+        .goal-item .circle-wrap .center-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--neon-color);
+        }
+        .goal-item .goal-info {
+            flex: 1;
+        }
+        .goal-item .goal-info .goal-title {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+        .goal-item .goal-info .goal-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .goal-item .goal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-end;
+        }
+        .goal-item .goal-actions .btn-done {
+            background: rgba(var(--neon-rgb), 0.1);
+            border: 1px solid rgba(var(--neon-rgb), 0.25);
+            color: var(--neon-color);
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .goal-item .goal-actions .btn-done:hover {
+            background: rgba(var(--neon-rgb), 0.2);
+            box-shadow: 0 0 20px rgba(var(--neon-rgb), 0.2);
+        }
+        .goal-item .goal-actions .btn-done.completed {
+            background: var(--neon-color);
+            color: #000;
+            border-color: var(--neon-color);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .panel-header h2 {
+            font-size: 1.3rem;
+            margin: 0;
+            color: var(--neon-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .panel-header .settings-icon-small {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: 0.3s;
+            padding: 6px;
+        }
+        .panel-header .settings-icon-small:hover {
+            color: var(--neon-color);
+            transform: rotate(60deg);
+        }
+
+        .ai-stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .ai-stat-item {
+            background: rgba(var(--neon-rgb), 0.03);
+            border-radius: 16px;
+            padding: 14px 10px;
+            text-align: center;
+            border: 1px solid rgba(var(--neon-rgb), 0.06);
+        }
+        .ai-stat-item .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+        }
+        .ai-stat-item .stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--neon-color);
+            margin-top: 4px;
+        }
+        .ai-stat-item input {
+            width: 100%;
+            padding: 6px 8px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(var(--neon-rgb), 0.15);
+            border-radius: 30px;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 4px;
+        }
+        .ai-stat-item input:focus {
+            outline: none;
+            border-color: var(--neon-color);
+        }
+        .ai-stat-item .stat-unit {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .ai-mood {
+            margin-top: 12px;
+        }
+        .ai-mood input {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(var(--neon-rgb), 0.1);
+            border-radius: 30px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: 0.3s;
+        }
+        .ai-mood input:focus {
+            outline: none;
+            border-color: var(--neon-color);
+        }
+
+        /* ============================================================================
+           СТИЛИ ДЛЯ ШКАЛЫ ИМТ (восстановлены)
+           ============================================================================ */
+        .bmi-scale {
+            height: 12px;
+            background: linear-gradient(90deg, #00ffff, #00ff9d, #ffcc00, #ff4757);
+            border-radius: 12px;
+            margin: 24px 0;
+            position: relative;
+        }
+        .bmi-marker {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: -4px;
+            transform: translateX(-50%);
+            box-shadow: 0 0 20px white;
+            border: 2px solid var(--neon-color);
+            z-index: 5;
+        }
+        .bmi-scale-wrapper {
+            position: relative;
+        }
+
+        /* Адаптив */
+        @media (max-width: 420px) {
+            .workout-minimal .exercise-row input[type="number"] {
+                width: 60px;
+                font-size: 1rem;
+            }
+            .workout-minimal .actions .btn {
+                font-size: 0.75rem;
+                padding: 8px 10px;
+                min-width: 50px;
+            }
+            .week-mini .item .value {
+                font-size: 1.2rem;
+            }
+            .ai-stats-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .ai-stat-item .stat-value {
+                font-size: 1.3rem;
+            }
+            .ai-header .ai-icon {
+                font-size: 2.5rem;
+            }
+            .ai-header h2 {
+                font-size: 1.5rem;
+            }
+            .bottom-nav {
+                padding: 6px 6px;
+            }
+            .nav-item i {
+                font-size: 1.2rem;
+            }
+            .nav-item span {
+                font-size: 0.5rem;
+            }
+            .goal-item .circle-wrap {
+                width: 50px;
+                height: 50px;
+            }
+            .goal-item .circle-wrap svg {
+                width: 50px;
+                height: 50px;
+            }
+            .goal-item .circle-wrap .center-text {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body class="dark">
+    <!-- ЗАГРУЗОЧНЫЙ ЭКРАН -->
+    <div id="loader">
+        <div class="logo-container">
+            <div class="logo-text">MIIFIIT</div>
+        </div>
+        <div class="logo-subtitle">NEON FITNESS</div>
+        <div class="loader-dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНЫЕ ОКНА -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" data-i18n="deleteTitle">Удаление тренировки</h3>
+                <button class="close-btn" id="closeDeleteModal">&times;</button>
+            </div>
+            <p style="font-size: 1.2rem; margin-bottom: 25px;" data-i18n="deleteConfirm">Вы уверены, что хотите удалить эту тренировку?</p>
+            <div class="modal-buttons" style="display:flex; gap:15px;">
+                <button class="btn" id="cancelDelete" style="flex:1;" data-i18n="cancel">Отмена</button>
+                <button class="btn btn-rest" id="confirmDelete" style="flex:1;" data-i18n="delete">Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" data-i18n="settings">Настройки</h3>
+                <button class="close-btn" id="closeSettingsModal">&times;</button>
+            </div>
+            <div style="margin: 25px 0;">
+                <h4 style="color: var(--neon-color); margin-bottom: 15px;" data-i18n="language">Язык</h4>
+                <div class="language-switch">
+                    <button class="lang-btn" data-lang="ru">🇷🇺 Русский</button>
+                    <button class="lang-btn" data-lang="en">🇬🇧 English</button>
+                    <button class="lang-btn" data-lang="de">🇩🇪 Deutsch</button>
+                </div>
+            </div>
+            <div style="margin: 25px 0;">
+                <h4 style="color: var(--neon-color); margin-bottom: 15px;" data-i18n="theme">Тема</h4>
+                <div class="theme-switch">
+                    <button class="theme-btn" id="modalLightTheme">☀️ <span data-i18n="light">Светлая</span></button>
+                    <button class="theme-btn" id="modalDarkTheme">🌙 <span data-i18n="dark">Тёмная</span></button>
+                </div>
+            </div>
+            <div style="margin: 25px 0;">
+                <h4 style="color: var(--neon-color); margin-bottom: 15px;" data-i18n="neonColor">Цвет неона</h4>
+                <div style="display: flex; flex-wrap: wrap; justify-content: center;">
+                    <span class="color-dot" style="background: #ff3b30;" data-color="255,59,48"></span>
+                    <span class="color-dot" style="background: #34c759;" data-color="52,199,89"></span>
+                    <span class="color-dot" style="background: #007aff;" data-color="0,122,255"></span>
+                    <span class="color-dot" style="background: #ffcc00;" data-color="255,204,0"></span>
+                </div>
+            </div>
+            <div style="margin: 25px 0;">
+                <h4 style="color: var(--neon-color); margin-bottom: 15px;" data-i18n="units">Единицы</h4>
+                <select id="unitSelect" style="width:100%; padding:16px; border-radius:50px;">
+                    <option value="km">Километры (km)</option>
+                    <option value="miles">Мили (miles)</option>
+                </select>
+            </div>
+            <div style="margin: 25px 0;">
+                <h4 style="color: var(--neon-color); margin-bottom: 15px;" data-i18n="soundVibration">Звук и вибрация</h4>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                    <span data-i18n="soundEffects">Звуковые эффекты</span>
+                    <label class="switch">
+                        <input type="checkbox" id="soundToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <span data-i18n="vibration">Вибрация</span>
+                    <label class="switch">
+                        <input type="checkbox" id="vibroToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div style="margin: 25px 0;">
+                <button class="btn btn-rest" id="resetSettingsBtn" style="width:100%;"><i class="fas fa-undo-alt"></i> <span data-i18n="resetSettings">Сбросить настройки</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалки ИИ Тренера -->
+    <div id="aiDayConfigModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-sun"></i> Настроить цели дня</h3>
+                <button class="close-btn" id="closeAiDayConfig">&times;</button>
+            </div>
+            <div id="aiDayConfigContent"></div>
+            <button class="btn btn-primary" id="saveAiDayConfig" style="width:100%; margin-top:10px;"><i class="fas fa-save"></i> Сохранить</button>
+        </div>
+    </div>
+
+    <div id="aiMonthConfigModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-calendar-alt"></i> Настроить цели месяца</h3>
+                <button class="close-btn" id="closeAiMonthConfig">&times;</button>
+            </div>
+            <div id="aiMonthConfigContent"></div>
+            <button class="btn btn-primary" id="saveAiMonthConfig" style="width:100%; margin-top:10px;"><i class="fas fa-save"></i> Сохранить</button>
+        </div>
+    </div>
+
+    <div id="aiRecConfigModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-lightbulb"></i> Рекомендация ИИ</h3>
+                <button class="close-btn" id="closeAiRecConfig">&times;</button>
+            </div>
+            <div class="ai-config-row">
+                <label>Текст рекомендации</label>
+                <textarea id="aiRecTextarea" rows="4" style="width:100%; padding:12px; background:rgba(0,0,0,0.3); border-radius:20px; border:1px solid rgba(var(--neon-rgb),0.2); color:var(--text-primary);"></textarea>
+            </div>
+            <button class="btn btn-primary" id="saveAiRecConfig" style="width:100%; margin-top:10px;"><i class="fas fa-save"></i> Сохранить</button>
+        </div>
+    </div>
+
+    <div id="aiStatsConfigModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-chart-pie"></i> Настроение / самочувствие</h3>
+                <button class="close-btn" id="closeAiStatsConfig">&times;</button>
+            </div>
+            <div class="ai-config-row">
+                <label>Ваше настроение сегодня</label>
+                <input type="text" id="aiMoodInput" placeholder="Например: Отлично, немного устал" style="width:100%; padding:12px; background:rgba(0,0,0,0.3); border-radius:30px; border:1px solid rgba(var(--neon-rgb),0.2); color:var(--text-primary);">
+            </div>
+            <button class="btn btn-primary" id="saveAiStatsConfig" style="width:100%; margin-top:10px;"><i class="fas fa-save"></i> Сохранить</button>
+        </div>
+    </div>
+
+    <!-- ВСПЛЫВАЮЩЕЕ УВЕДОМЛЕНИЕ -->
+    <div class="alert" id="alert" style="position:fixed; top:25px; left:50%; transform:translateX(-50%); background:linear-gradient(145deg, var(--neon-color), #00cc7a); color:#000; padding:16px 30px; border-radius:60px; font-weight:700; z-index:3000; display:none; animation:slideDown 0.4s ease; text-align:center; box-shadow:0 0 40px var(--neon-color);"></div>
+
+    <!-- ШАПКА -->
+    <header class="header">
+        <h1>MIIFIIT</h1>
+        <div style="display: flex; align-items: center;">
+            <div class="date-display" id="currentDate"></div>
+            <i class="fas fa-cog settings-icon" id="settingsIcon"></i>
+        </div>
+    </header>
+
+    <!-- ОСНОВНОЙ КОНТЕЙНЕР -->
+    <div class="container">
+        <!-- ВКЛАДКА 1: ТРЕНИРОВКИ -->
+        <div id="exercises-tab" class="tab-content active">
+            <div class="card workout-minimal">
+                <h2><i class="fas fa-dumbbell"></i> <span data-i18n="workoutManagement">Тренировка</span></h2>
+                <div class="date-row">
+                    <input type="date" id="training-date" class="date-picker">
+                    <button class="btn-search" id="loadTrainingDateBtn"><i class="fas fa-search"></i></button>
+                </div>
+                <div class="exercise-row">
+                    <span class="icon"><i class="fas fa-hands"></i></span>
+                    <span class="label" data-i18n="pushups">Отжимания</span>
+                    <input type="number" id="pushups" min="0" step="1" value="0">
+                    <span class="unit">раз</span>
+                </div>
+                <div class="exercise-row">
+                    <span class="icon"><i class="fas fa-stopwatch"></i></span>
+                    <span class="label" data-i18n="plank">Планка</span>
+                    <input type="number" id="plank" min="0" step="1" value="0">
+                    <span class="unit">сек</span>
+                </div>
+                <div class="exercise-row">
+                    <span class="icon"><i class="fas fa-bicycle"></i></span>
+                    <span class="label" data-i18n="cycling">Велотренажер</span>
+                    <input type="number" id="cycling-distance" min="0" step="0.1" value="0">
+                    <span class="unit" id="unit-label">км</span>
+                </div>
+                <div class="exercise-row">
+                    <span class="icon"><i class="fas fa-fire"></i></span>
+                    <span class="label" data-i18n="calories">Калории</span>
+                    <input type="number" id="cycling-calories" min="0" step="1" value="0">
+                    <span class="unit">ккал</span>
+                </div>
+                <div class="note-row">
+                    <input type="text" id="workout-note" placeholder="Заметка..." data-i18n-placeholder="note">
+                </div>
+                <div class="actions">
+                    <button class="btn btn-primary" id="save-exercises"><i class="fas fa-save"></i> <span data-i18n="save">Сохранить</span></button>
+                    <button class="btn" id="clear-form-btn"><i class="fas fa-times"></i> <span data-i18n="clear">Очистить</span></button>
+                    <button class="btn btn-rest" id="rest-day-btn"><i class="fas fa-bed"></i> <span data-i18n="restDay">Отдых</span></button>
+                </div>
+                <div class="actions" style="margin-top: 6px;">
+                    <button class="btn" id="add-training-btn" style="flex:1; background: rgba(255,255,255,0.03);"><i class="fas fa-plus"></i> <span data-i18n="addToCurrent">Добавить к текущей</span></button>
+                </div>
+            </div>
+            <div class="card workout-minimal">
+                <h2><i class="fas fa-chart-line"></i> <span data-i18n="weeklyProgress">Прогресс за неделю</span></h2>
+                <div id="week-stats"></div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА 2: ВЕС -->
+        <div id="weight-tab" class="tab-content">
+            <div class="card">
+                <h2><i class="fas fa-weight-scale"></i> <span data-i18n="heightWeight">Рост и вес</span></h2>
+                <div class="input-group">
+                    <label><i class="fas fa-ruler-vertical"></i> <span data-i18n="height">Рост (см)</span></label>
+                    <div style="display:flex; gap:12px;">
+                        <input type="number" id="height" class="input-field" placeholder="175" min="100" max="250" step="0.1" style="flex:1;">
+                        <button class="btn-secondary" id="save-height" style="padding:16px 20px;"><i class="fas fa-save"></i></button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label><i class="fas fa-weight"></i> <span data-i18n="weight">Вес (кг)</span></label>
+                    <input type="number" id="weight" class="input-field" placeholder="70.0" step="0.1" min="0">
+                </div>
+                <button class="btn btn-primary" id="save-weight"><i class="fas fa-calculator"></i> <span data-i18n="saveAndCalcBMI">Сохранить и рассчитать ИМТ</span></button>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-heartbeat"></i> <span data-i18n="bmi">Индекс массы тела</span></h2>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <span class="stat-value" id="current-bmi" style="font-size:2.5rem;">--</span>
+                    <span class="record-badge" id="bmi-category" style="font-size:1rem; padding:6px 20px;">--</span>
+                </div>
+                <div class="bmi-scale-wrapper">
+                    <div class="bmi-scale">
+                        <div class="bmi-marker" id="bmi-marker"></div>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:25px;">
+                    <span data-i18n="underweight">Дефицит</span><span data-i18n="normal">Норма</span><span data-i18n="overweight">Избыток</span><span data-i18n="obese">Ожирение</span>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="ideal-weight">--</div>
+                        <div class="stat-label" data-i18n="idealWeight">Идеальный вес</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="weight-diff">--</div>
+                        <div class="stat-label" data-i18n="deviation">Отклонение</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-chart-line"></i> <span data-i18n="weightChart">График веса</span></h2>
+                <div class="chart-container">
+                    <canvas id="weightChart" style="width:100%; height:200px;"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-history"></i> <span data-i18n="weightHistory">История веса</span></h2>
+                <div id="weight-history"></div>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-list"></i> <span data-i18n="bmiHistory">История ИМТ</span></h2>
+                <div id="bmi-history"></div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА 3: ИИ ТРЕНЕР -->
+        <div id="ai-tab" class="tab-content">
+            <div class="ai-header">
+                <i class="fas fa-robot ai-icon"></i>
+                <h2>ИИ Тренер</h2>
+            </div>
+            <div class="ai-sub">Твой персональный помощник по тренировкам</div>
+            <div class="ai-welcome">
+                <div class="greeting">Привет! <span>👋</span></div>
+                <div class="sub">Вот твои цели и план на сегодня</div>
+            </div>
+
+            <div class="card" style="padding: 18px 16px;">
+                <div class="panel-header">
+                    <h2><i class="fas fa-bullseye"></i> Цели дня</h2>
+                    <i class="fas fa-cog settings-icon-small" id="openAiDayConfig"></i>
+                </div>
+                <div id="aiDayGoalsContainer"></div>
+                <div style="text-align:right; font-size:0.8rem; color:var(--text-secondary); margin-top:6px;">
+                    <span id="dayTimerDisplay">⏳ 24:00:00</span>
+                </div>
+            </div>
+
+            <div class="card" style="padding: 18px 16px;">
+                <div class="panel-header">
+                    <h2><i class="fas fa-calendar-alt"></i> Цели месяца</h2>
+                    <i class="fas fa-cog settings-icon-small" id="openAiMonthConfig"></i>
+                </div>
+                <div id="aiMonthGoalsContainer"></div>
+                <div style="text-align:right; font-size:0.8rem; color:var(--text-secondary); margin-top:6px;">
+                    <span id="monthTimerDisplay">⏳ 30д 00:00</span>
+                </div>
+            </div>
+
+            <div class="card" style="padding: 18px 16px;">
+                <div class="panel-header">
+                    <h2><i class="fas fa-lightbulb"></i> Рекомендация ИИ</h2>
+                    <i class="fas fa-cog settings-icon-small" id="openAiRecConfig"></i>
+                </div>
+                <div id="aiRecommendationDisplay" style="font-size:1rem; color:var(--text-secondary); line-height:1.5;"></div>
+            </div>
+
+            <div class="card" style="padding: 18px 16px;">
+                <div class="panel-header">
+                    <h2><i class="fas fa-chart-pie"></i> Моя статистика</h2>
+                    <i class="fas fa-cog settings-icon-small" id="openAiStatsConfig"></i>
+                </div>
+                <div class="ai-stats-grid" id="aiStatsGrid">
+                    <div class="ai-stat-item">
+                        <div class="stat-label">Выполнено целей</div>
+                        <div class="stat-value" id="aiDayCompletion">0%</div>
+                    </div>
+                    <div class="ai-stat-item">
+                        <div class="stat-label">Прогресс месяца</div>
+                        <div class="stat-value" id="aiMonthCompletion">0%</div>
+                    </div>
+                </div>
+                <div class="ai-mood">
+                    <input type="text" id="aiMoodDisplay" placeholder="Как ты себя чувствуешь?" readonly style="cursor:pointer; background:rgba(0,0,0,0.2); border:1px solid rgba(var(--neon-rgb),0.1); border-radius:30px; padding:10px 14px; color:var(--text-secondary); width:100%;">
+                </div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА 4: ПИТАНИЕ -->
+        <div id="food-tab" class="tab-content">
+            <div class="card">
+                <h2><i class="fas fa-calendar-alt"></i> <span data-i18n="foodDiary">Календарь питания</span></h2>
+                <div id="calendarContainer">
+                    <div class="calendar-nav">
+                        <button id="prevMonthBtn"><i class="fas fa-chevron-left"></i></button>
+                        <span class="month-label" id="currentMonthLabel">Январь 2026</span>
+                        <button id="nextMonthBtn"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                    <div class="norm-field">
+                        <label for="dailyNormInput" data-i18n="dailyNorm">Норма (ккал/день):</label>
+                        <input type="number" id="dailyNormInput" placeholder="2000" min="0" step="50">
+                        <button class="btn btn-primary" id="saveDailyNormBtn"><i class="fas fa-save"></i></button>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <h3 style="font-size: 1rem; color: var(--neon-color); margin-bottom: 8px;"><i class="fas fa-chart-line"></i> Калорийность по дням</h3>
+                        <div class="chart-container">
+                            <canvas id="calorieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div id="editContainer" class="edit-container">
+                    <div class="edit-header">
+                        <button class="back-btn" id="backToCalendarBtn"><i class="fas fa-arrow-left"></i></button>
+                        <span class="edit-date-label" id="selectedDateLabel">Выберите день</span>
+                    </div>
+                    <div class="day-total">
+                        <span data-i18n="totalCalories">Всего калорий:</span> <span id="dayTotalCalories">0</span>
+                    </div>
+                    <div class="meal-form" id="mealForm">
+                        <div class="meal-row">
+                            <label><i class="fas fa-sun"></i> <span data-i18n="breakfast">Завтрак</span></label>
+                            <input type="text" id="breakfastName" placeholder="Название" data-i18n-placeholder="mealName">
+                            <input type="number" id="breakfastCal" placeholder="ккал" min="0" step="1" data-i18n-placeholder="kcal">
+                        </div>
+                        <div class="meal-row">
+                            <label><i class="fas fa-utensils"></i> <span data-i18n="lunch">Обед</span></label>
+                            <input type="text" id="lunchName" placeholder="Название" data-i18n-placeholder="mealName">
+                            <input type="number" id="lunchCal" placeholder="ккал" min="0" step="1" data-i18n-placeholder="kcal">
+                        </div>
+                        <div class="meal-row">
+                            <label><i class="fas fa-moon"></i> <span data-i18n="dinner">Ужин</span></label>
+                            <input type="text" id="dinnerName" placeholder="Название" data-i18n-placeholder="mealName">
+                            <input type="number" id="dinnerCal" placeholder="ккал" min="0" step="1" data-i18n-placeholder="kcal">
+                        </div>
+                        <div class="meal-row">
+                            <label><i class="fas fa-apple-alt"></i> <span data-i18n="snacks">Перекусы</span></label>
+                            <input type="text" id="snacksName" placeholder="Название" data-i18n-placeholder="mealName">
+                            <input type="number" id="snacksCal" placeholder="ккал" min="0" step="1" data-i18n-placeholder="kcal">
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="saveMealDayBtn"><i class="fas fa-save"></i> <span data-i18n="save">Сохранить</span></button>
+                        <button class="btn btn-rest" id="clearMealDayBtn"><i class="fas fa-trash"></i> <span data-i18n="clear">Очистить день</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА 5: СТАТИСТИКА -->
+        <div id="stats-tab" class="tab-content">
+            <div class="card">
+                <h2><i class="fas fa-trophy"></i> <span data-i18n="overallStats">Общая статистика</span></h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-days">0</div>
+                        <div class="stat-label" data-i18n="workoutDays">Дней тренировок</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-pushups">0</div>
+                        <div class="stat-label" data-i18n="totalPushups">Отжиманий</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-plank">0</div>
+                        <div class="stat-label" data-i18n="totalPlank">Планка (мин)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-cycling">0</div>
+                        <div class="stat-label" data-i18n="totalCycling">Км на вело</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-crown"></i> <span data-i18n="records">Рекорды</span></h2>
+                <div id="records-list"></div>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-calendar"></i> <span data-i18n="recentWorkouts">Последние тренировки</span></h2>
+                <div id="recent-trainings"></div>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-database"></i> <span data-i18n="dataManagement">Управление данными</span></h2>
+                <div style="display:flex; gap:12px; margin-bottom:20px;">
+                    <button class="btn" id="export-data"><i class="fas fa-download"></i> <span data-i18n="export">Экспорт</span></button>
+                    <button class="btn" id="import-data"><i class="fas fa-upload"></i> <span data-i18n="import">Импорт</span></button>
+                </div>
+                <input type="file" id="import-file" accept=".json" style="display:none;">
+                <button class="btn btn-rest" id="clear-data" style="width:100%;"><i class="fas fa-trash"></i> <span data-i18n="clearAll">Очистить всё</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- НИЖНЕЕ МЕНЮ (5 вкладок) -->
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item active" data-tab="exercises-tab"><i class="fas fa-dumbbell"></i><span data-i18n="workouts">Тренировки</span></a>
+        <a href="#" class="nav-item" data-tab="weight-tab"><i class="fas fa-weight-scale"></i><span data-i18n="weight">Вес</span></a>
+        <a href="#" class="nav-item" data-tab="ai-tab"><i class="fas fa-robot"></i><span>ИИ Тренер</span></a>
+        <a href="#" class="nav-item" data-tab="food-tab"><i class="fas fa-utensils"></i><span data-i18n="food">Питание</span></a>
+        <a href="#" class="nav-item" data-tab="stats-tab"><i class="fas fa-chart-simple"></i><span data-i18n="stats">Статистика</span></a>
+    </nav>
+
+    <script>
+        // ============================================================================
+        // 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+        // ============================================================================
+        let trainingData = JSON.parse(localStorage.getItem('miifiit_trainings')) || [];
+        let weightData = JSON.parse(localStorage.getItem('miifiit_weight')) || [];
+        let height = parseFloat(localStorage.getItem('miifiit_height')) || null;
+        let bmiHistory = JSON.parse(localStorage.getItem('miifiit_bmi_history')) || [];
+        let mealData = JSON.parse(localStorage.getItem('miifiit_meals_v2')) || {};
+        let dailyNorm = parseInt(localStorage.getItem('miifiit_daily_norm')) || 2000;
+
+        let aiData = JSON.parse(localStorage.getItem('miifiit_ai_data')) || {
+            dayGoals: [],
+            monthGoals: [],
+            recommendation: 'Сегодня лучше сделать тренировку груди и рук. Не забудь выполнить разминку 10 минут.',
+            mood: '',
+            dayCompletion: 0,
+            monthCompletion: 0
+        };
+
+        let theme = localStorage.getItem('miifiit_theme') || 'dark';
+        let neonColor = localStorage.getItem('miifiit_neon') || '52,199,89';
+        let unit = localStorage.getItem('miifiit_unit') || 'km';
+        let soundEnabled = localStorage.getItem('miifiit_sound') !== 'false';
+        let vibroEnabled = localStorage.getItem('miifiit_vibro') !== 'false';
+        let language = localStorage.getItem('miifiit_language') || 'ru';
+
+        let trainingToDelete = null;
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let selectedDate = null;
+        let calorieChartInstance = null;
+        let weightChartInstance = null;
+
+        let dayTimerInterval = null;
+        let monthTimerInterval = null;
+
+        // ============================================================================
+        // 2. МУЛЬТИЯЗЫЧНОСТЬ
+        // ============================================================================
+        const translations = {
+            ru: {
+                settings: 'Настройки', theme: 'Тема', light: 'Светлая', dark: 'Тёмная',
+                neonColor: 'Цвет неона', language: 'Язык', units: 'Единицы',
+                soundVibration: 'Звук и вибрация', soundEffects: 'Звуковые эффекты',
+                vibration: 'Вибрация', resetSettings: 'Сбросить настройки',
+                cancel: 'Отмена', delete: 'Удалить', save: 'Сохранить', add: 'Дополнить',
+                clear: 'Очистить', restDay: 'День отдыха', addToCurrent: 'Добавить к текущей',
+                workoutManagement: 'Управление тренировкой', pushups: 'Отжимания (раз)',
+                plank: 'Планка (секунд)', cycling: 'Велотренажер (км)', calories: 'Сожжено калорий',
+                note: 'Заметка', weeklyProgress: 'Прогресс за неделю',
+                heightWeight: 'Рост и вес', height: 'Рост (см)', weight: 'Вес (кг)',
+                saveAndCalcBMI: 'Сохранить и рассчитать ИМТ', bmi: 'Индекс массы тела',
+                underweight: 'Дефицит', normal: 'Норма', overweight: 'Избыток', obese: 'Ожирение',
+                idealWeight: 'Идеальный вес', deviation: 'Отклонение', weightChart: 'График веса',
+                weightHistory: 'История веса', bmiHistory: 'История ИМТ',
+                foodDiary: 'Календарь питания', dailyNorm: 'Норма (ккал/день)',
+                editMeal: 'Редактировать день', totalCalories: 'Всего калорий',
+                breakfast: 'Завтрак', lunch: 'Обед', dinner: 'Ужин', snacks: 'Перекусы',
+                mealName: 'Название', kcal: 'ккал',
+                overallStats: 'Общая статистика', workoutDays: 'Дней тренировок',
+                totalPushups: 'Отжиманий', totalPlank: 'Планка (мин)', totalCycling: 'Км на вело',
+                records: 'Рекорды', recentWorkouts: 'Последние тренировки',
+                dataManagement: 'Управление данными', export: 'Экспорт', import: 'Импорт',
+                clearAll: 'Очистить всё',
+                workouts: 'Тренировки', food: 'Питание', stats: 'Статистика',
+                deleteTitle: 'Удаление тренировки', deleteConfirm: 'Вы уверены, что хотите удалить эту тренировку?',
+                selectDay: 'Выберите день в календаре'
+            },
+            en: { /* ... */ },
+            de: { /* ... */ }
+        };
+
+        function setLanguage(lang) {
+            language = lang;
+            localStorage.setItem('miifiit_language', lang);
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang] && translations[lang][key]) {
+                    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                        el.placeholder = translations[lang][key];
+                    } else {
+                        el.textContent = translations[lang][key];
+                    }
+                }
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (translations[lang] && translations[lang][key]) {
+                    el.placeholder = translations[lang][key];
+                }
+            });
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.lang === lang) btn.classList.add('active');
+            });
+            updateMonthLabel();
+            if (selectedDate) {
+                document.getElementById('selectedDateLabel').textContent = selectedDate;
+            } else {
+                document.getElementById('selectedDateLabel').textContent = translations[lang].selectDay || 'Выберите день в календаре';
+            }
+            updateCalorieChart();
+            const unitLabel = document.getElementById('unit-label');
+            if (unitLabel) unitLabel.textContent = unit === 'km' ? 'км' : 'миль';
+        }
+
+        // ============================================================================
+        // 3. ПРИМЕНЕНИЕ НАСТРОЕК
+        // ============================================================================
+        function applyTheme() {
+            document.body.className = theme;
+            localStorage.setItem('miifiit_theme', theme);
+            document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
+            const activeThemeBtn = document.getElementById(theme === 'dark' ? 'modalDarkTheme' : 'modalLightTheme');
+            if (activeThemeBtn) activeThemeBtn.classList.add('active');
+        }
+
+        function applyNeonColor(rgb) {
+            neonColor = rgb;
+            document.documentElement.style.setProperty('--neon-rgb', rgb);
+            localStorage.setItem('miifiit_neon', rgb);
+            if (typeof updateWeightChart === 'function') updateWeightChart();
+        }
+
+        function applyUnit(value) {
+            unit = value;
+            localStorage.setItem('miifiit_unit', value);
+            showAlert(translations[language].units + ': ' + (value === 'km' ? 'km' : 'miles'), 'success');
+            const unitLabel = document.getElementById('unit-label');
+            if (unitLabel) unitLabel.textContent = value === 'km' ? 'км' : 'миль';
+            updateStats();
+            updateWeekStats();
+        }
+
+        function applySound(enabled) {
+            soundEnabled = enabled;
+            localStorage.setItem('miifiit_sound', enabled);
+        }
+
+        function applyVibro(enabled) {
+            vibroEnabled = enabled;
+            localStorage.setItem('miifiit_vibro', enabled);
+        }
+
+        // ============================================================================
+        // 4. ЗАГРУЗКА
+        // ============================================================================
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('loader-hidden');
+            }, 1500);
+        });
+
+        // ============================================================================
+        // 5. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        // ============================================================================
+        function showAlert(message, type = 'success') {
+            const alertEl = document.getElementById('alert');
+            alertEl.textContent = message;
+            alertEl.style.background = type === 'error' ? 'linear-gradient(145deg, #ff4757, #ff6b81)' :
+                                      type === 'warning' ? 'linear-gradient(145deg, #ffc107, #ffd451)' :
+                                      `linear-gradient(145deg, rgb(${neonColor}), rgba(${neonColor},0.8))`;
+            alertEl.style.display = 'block';
+            setTimeout(() => { alertEl.style.display = 'none'; }, 2000);
+            if (soundEnabled) {
+                try { new Audio('data:audio/wav;base64,UklGRlwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVoAAABAgICA+Pj4/////Pz8+Pj4/////w==').play(); } catch(e) {}
+            }
+            if (vibroEnabled && navigator.vibrate) navigator.vibrate(50);
+        }
+
+        function updateCurrentDate() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('currentDate').textContent = now.toLocaleDateString(language === 'ru' ? 'ru-RU' : language === 'de' ? 'de-DE' : 'en-US', options);
+            document.getElementById('training-date').value = now.toISOString().split('T')[0];
+        }
+
+        // ============================================================================
+        // 6. ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
+        // ============================================================================
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                item.classList.add('active');
+                const tabId = item.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+                if (tabId === 'stats-tab') updateStats();
+                if (tabId === 'weight-tab') {
+                    updateWeightHistory();
+                    updateWeightChart();
+                    updateBMIDisplay();
+                    updateBMIHistory();
+                }
+                if (tabId === 'exercises-tab') { loadCurrentTraining(); updateWeekStats(); }
+                if (tabId === 'food-tab') {
+                    showCalendarView();
+                    renderCalendar(currentMonth, currentYear);
+                    updateDailyNormUI();
+                    updateCalorieChart();
+                }
+                if (tabId === 'ai-tab') {
+                    renderAITab();
+                    startTimers();
+                }
+            });
+        });
+
+        // ============================================================================
+        // 7. МОДАЛЬНЫЕ ОКНА (глобальные и ИИ)
+        // ============================================================================
+        const settingsIcon = document.getElementById('settingsIcon');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettings = document.getElementById('closeSettingsModal');
+
+        settingsIcon.addEventListener('click', () => { settingsModal.style.display = 'flex'; });
+        closeSettings.addEventListener('click', () => { settingsModal.style.display = 'none'; });
+        window.addEventListener('click', (e) => { if (e.target === settingsModal) settingsModal.style.display = 'none'; });
+
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', () => setLanguage(btn.dataset.lang));
+        });
+
+        document.getElementById('modalLightTheme').addEventListener('click', () => { theme = 'light'; applyTheme(); });
+        document.getElementById('modalDarkTheme').addEventListener('click', () => { theme = 'dark'; applyTheme(); });
+
+        document.querySelectorAll('#settingsModal .color-dot').forEach(dot => {
+            dot.addEventListener('click', (e) => {
+                const rgb = e.target.dataset.color;
+                applyNeonColor(rgb);
+                document.querySelectorAll('#settingsModal .color-dot').forEach(d => d.classList.remove('active'));
+                e.target.classList.add('active');
+            });
+        });
+
+        document.getElementById('unitSelect').addEventListener('change', (e) => applyUnit(e.target.value));
+
+        const soundToggle = document.getElementById('soundToggle');
+        soundToggle.addEventListener('change', (e) => applySound(e.target.checked));
+
+        const vibroToggle = document.getElementById('vibroToggle');
+        vibroToggle.addEventListener('change', (e) => applyVibro(e.target.checked));
+
+        document.getElementById('resetSettingsBtn').addEventListener('click', () => {
+            if (confirm('Сбросить все настройки к значениям по умолчанию?')) {
+                localStorage.removeItem('miifiit_theme');
+                localStorage.removeItem('miifiit_neon');
+                localStorage.removeItem('miifiit_unit');
+                localStorage.removeItem('miifiit_sound');
+                localStorage.removeItem('miifiit_vibro');
+                localStorage.removeItem('miifiit_language');
+                theme = 'dark';
+                neonColor = '52,199,89';
+                unit = 'km';
+                soundEnabled = true;
+                vibroEnabled = true;
+                language = 'ru';
+                applyTheme();
+                applyNeonColor(neonColor);
+                setLanguage('ru');
+                document.getElementById('unitSelect').value = 'km';
+                soundToggle.checked = true;
+                vibroToggle.checked = true;
+                showAlert('Настройки сброшены', 'success');
+            }
+        });
+
+        // Модалки ИИ
+        const aiDayConfigModal = document.getElementById('aiDayConfigModal');
+        const aiMonthConfigModal = document.getElementById('aiMonthConfigModal');
+        const aiRecConfigModal = document.getElementById('aiRecConfigModal');
+        const aiStatsConfigModal = document.getElementById('aiStatsConfigModal');
+
+        document.getElementById('openAiDayConfig').addEventListener('click', () => {
+            openAiDayConfig();
+            aiDayConfigModal.style.display = 'flex';
+        });
+        document.getElementById('closeAiDayConfig').addEventListener('click', () => { aiDayConfigModal.style.display = 'none'; });
+
+        document.getElementById('openAiMonthConfig').addEventListener('click', () => {
+            openAiMonthConfig();
+            aiMonthConfigModal.style.display = 'flex';
+        });
+        document.getElementById('closeAiMonthConfig').addEventListener('click', () => { aiMonthConfigModal.style.display = 'none'; });
+
+        document.getElementById('openAiRecConfig').addEventListener('click', () => {
+            document.getElementById('aiRecTextarea').value = aiData.recommendation || '';
+            aiRecConfigModal.style.display = 'flex';
+        });
+        document.getElementById('closeAiRecConfig').addEventListener('click', () => { aiRecConfigModal.style.display = 'none'; });
+
+        document.getElementById('openAiStatsConfig').addEventListener('click', () => {
+            document.getElementById('aiMoodInput').value = aiData.mood || '';
+            aiStatsConfigModal.style.display = 'flex';
+        });
+        document.getElementById('closeAiStatsConfig').addEventListener('click', () => { aiStatsConfigModal.style.display = 'none'; });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === aiDayConfigModal) aiDayConfigModal.style.display = 'none';
+            if (e.target === aiMonthConfigModal) aiMonthConfigModal.style.display = 'none';
+            if (e.target === aiRecConfigModal) aiRecConfigModal.style.display = 'none';
+            if (e.target === aiStatsConfigModal) aiStatsConfigModal.style.display = 'none';
+        });
+
+        document.getElementById('saveAiDayConfig').addEventListener('click', () => {
+            saveAiDayConfig();
+            aiDayConfigModal.style.display = 'none';
+            renderAITab();
+        });
+
+        document.getElementById('saveAiMonthConfig').addEventListener('click', () => {
+            saveAiMonthConfig();
+            aiMonthConfigModal.style.display = 'none';
+            renderAITab();
+        });
+
+        document.getElementById('saveAiRecConfig').addEventListener('click', () => {
+            aiData.recommendation = document.getElementById('aiRecTextarea').value.trim() || 'Рекомендация не задана';
+            localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+            aiRecConfigModal.style.display = 'none';
+            renderAITab();
+            showAlert('Рекомендация сохранена');
+        });
+
+        document.getElementById('saveAiStatsConfig').addEventListener('click', () => {
+            aiData.mood = document.getElementById('aiMoodInput').value.trim() || '';
+            localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+            aiStatsConfigModal.style.display = 'none';
+            renderAITab();
+            showAlert('Настроение сохранено');
+        });
+
+        // ============================================================================
+        // 8. ТРЕНИРОВКИ (без изменений)
+        // ============================================================================
+        const pushupsInput = document.getElementById('pushups');
+        const plankInput = document.getElementById('plank');
+        const cyclingDistInput = document.getElementById('cycling-distance');
+        const cyclingCalInput = document.getElementById('cycling-calories');
+        const noteInput = document.getElementById('workout-note');
+
+        function loadCurrentTraining() {
+            const date = document.getElementById('training-date').value;
+            if (!date) return;
+            const training = trainingData.find(t => t.date === date);
+            if (training) {
+                pushupsInput.value = training.pushups || 0;
+                plankInput.value = training.plank || 0;
+                cyclingDistInput.value = training.cycling?.distance || 0;
+                cyclingCalInput.value = training.cycling?.calories || 0;
+                noteInput.value = training.note || '';
+                if (training.rest) {
+                    document.getElementById('rest-day-btn').classList.add('rest-active');
+                    document.getElementById('rest-day-btn').innerHTML = '<i class="fas fa-check"></i> ' + translations[language].restDay + ' отмечен';
+                } else {
+                    document.getElementById('rest-day-btn').classList.remove('rest-active');
+                    document.getElementById('rest-day-btn').innerHTML = '<i class="fas fa-bed"></i> ' + translations[language].restDay;
+                }
+            } else {
+                pushupsInput.value = 0;
+                plankInput.value = 0;
+                cyclingDistInput.value = 0;
+                cyclingCalInput.value = 0;
+                noteInput.value = '';
+                document.getElementById('rest-day-btn').classList.remove('rest-active');
+                document.getElementById('rest-day-btn').innerHTML = '<i class="fas fa-bed"></i> ' + translations[language].restDay;
+            }
+        }
+
+        document.getElementById('loadTrainingDateBtn').addEventListener('click', function() {
+            loadCurrentTraining();
+            showAlert('Тренировка загружена', 'success');
+        });
+
+        document.getElementById('clear-form-btn').addEventListener('click', function() {
+            pushupsInput.value = 0;
+            plankInput.value = 0;
+            cyclingDistInput.value = 0;
+            cyclingCalInput.value = 0;
+            noteInput.value = '';
+            document.getElementById('rest-day-btn').classList.remove('rest-active');
+            document.getElementById('rest-day-btn').innerHTML = '<i class="fas fa-bed"></i> ' + translations[language].restDay;
+        });
+
+        document.getElementById('rest-day-btn').addEventListener('click', function() {
+            if (this.classList.contains('rest-active')) {
+                this.classList.remove('rest-active');
+                this.innerHTML = '<i class="fas fa-bed"></i> ' + translations[language].restDay;
+            } else {
+                this.classList.add('rest-active');
+                this.innerHTML = '<i class="fas fa-check"></i> ' + translations[language].restDay + ' отмечен';
+            }
+        });
+
+        document.getElementById('save-exercises').addEventListener('click', function() {
+            const date = document.getElementById('training-date').value;
+            if (!date) { showAlert('Выберите дату', 'error'); return; }
+            const pushups = parseInt(pushupsInput.value) || 0;
+            const plank = parseInt(plankInput.value) || 0;
+            const distance = parseFloat(cyclingDistInput.value) || 0;
+            const calories = parseInt(cyclingCalInput.value) || 0;
+            const note = noteInput.value.trim();
+            const isRest = document.getElementById('rest-day-btn').classList.contains('rest-active');
+            const index = trainingData.findIndex(t => t.date === date);
+            const entry = { date, pushups, plank, cycling: { distance, calories }, rest: isRest, note };
+            if (index !== -1) trainingData[index] = entry;
+            else trainingData.push(entry);
+            localStorage.setItem('miifiit_trainings', JSON.stringify(trainingData));
+            showAlert(translations[language].save + ' ' + date);
+            updateStats(); updateWeekStats();
+        });
+
+        document.getElementById('add-training-btn').addEventListener('click', function() {
+            const date = document.getElementById('training-date').value;
+            if (!date) { showAlert('Выберите дату', 'error'); return; }
+            const pushups = parseInt(pushupsInput.value) || 0;
+            const plank = parseInt(plankInput.value) || 0;
+            const distance = parseFloat(cyclingDistInput.value) || 0;
+            const calories = parseInt(cyclingCalInput.value) || 0;
+            const note = noteInput.value.trim();
+            const isRest = document.getElementById('rest-day-btn').classList.contains('rest-active');
+            const index = trainingData.findIndex(t => t.date === date);
+            if (index !== -1) {
+                const existing = trainingData[index];
+                trainingData[index] = {
+                    date,
+                    pushups: existing.pushups + pushups,
+                    plank: existing.plank + plank,
+                    cycling: {
+                        distance: existing.cycling.distance + distance,
+                        calories: existing.cycling.calories + calories
+                    },
+                    rest: existing.rest || isRest,
+                    note: existing.note ? existing.note + '; ' + note : note
+                };
+                showAlert('Данные добавлены к тренировке за ' + date);
+            } else {
+                trainingData.push({ date, pushups, plank, cycling: { distance, calories }, rest: isRest, note });
+                showAlert('Тренировка за ' + date + ' создана');
+            }
+            localStorage.setItem('miifiit_trainings', JSON.stringify(trainingData));
+            updateStats(); updateWeekStats();
+        });
+
+        function updateWeekStats() {
+            const container = document.getElementById('week-stats');
+            const today = new Date();
+            const weekAgo = new Date(); weekAgo.setDate(today.getDate() - 7);
+            const weekData = trainingData.filter(t => !t.rest && new Date(t.date) >= weekAgo);
+            if (weekData.length === 0) {
+                container.innerHTML = `<div class="empty-state" style="padding:30px 10px;">
+                    <i class="fas fa-dumbbell" style="font-size:2.5rem;"></i>
+                    <p style="font-size:1rem;">Начните тренировку, чтобы увидеть прогресс</p>
+                </div>`;
+                return;
+            }
+            const totalWorkouts = weekData.length;
+            const totalCalories = weekData.reduce((sum, t) => sum + (t.cycling?.calories || 0), 0);
+            const totalPush = weekData.reduce((sum, t) => sum + (t.pushups || 0), 0);
+            const totalPlank = weekData.reduce((sum, t) => sum + (t.plank || 0), 0);
+            const totalBike = weekData.reduce((sum, t) => sum + (t.cycling?.distance || 0), 0);
+            const volume = totalPush + Math.round(totalPlank/10) + Math.round(totalBike*10);
+            container.innerHTML = `
+                <div class="week-mini">
+                    <div class="item">
+                        <i class="fas fa-calendar-check"></i>
+                        <div class="value">${totalWorkouts}</div>
+                        <div class="label" data-i18n="weekWorkouts">Тренировок</div>
+                    </div>
+                    <div class="item">
+                        <i class="fas fa-fire"></i>
+                        <div class="value">${totalCalories}</div>
+                        <div class="label" data-i18n="weekCalories">Ккал</div>
+                    </div>
+                    <div class="item">
+                        <i class="fas fa-chart-bar"></i>
+                        <div class="value">${volume}</div>
+                        <div class="label" data-i18n="weekVolume">Объём</div>
+                    </div>
+                </div>
+            `;
+            container.querySelectorAll('.label').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (key && translations[language][key]) {
+                    el.textContent = translations[language][key];
+                }
+            });
+        }
+
+        // ============================================================================
+        // 9. ВЕС (исправлены функции)
+        // ============================================================================
+        function calculateBMI(weight, height) {
+            if (!height || !weight) return null;
+            return weight / ((height/100)**2);
+        }
+
+        function updateBMIDisplay() {
+            const currentWeight = weightData.length ? weightData[weightData.length-1].weight : null;
+            const bmi = calculateBMI(currentWeight, height);
+            const bmiEl = document.getElementById('current-bmi');
+            const categoryEl = document.getElementById('bmi-category');
+            const marker = document.getElementById('bmi-marker');
+            if (bmi) {
+                bmiEl.textContent = bmi.toFixed(1);
+                let cat = '';
+                if (bmi < 18.5) cat = translations[language].underweight;
+                else if (bmi < 25) cat = translations[language].normal;
+                else if (bmi < 30) cat = translations[language].overweight;
+                else cat = translations[language].obese;
+                categoryEl.textContent = cat;
+                let pos = 0;
+                if (bmi < 18.5) pos = (bmi/18.5)*20;
+                else if (bmi < 25) pos = 20 + ((bmi-18.5)/6.5)*20;
+                else if (bmi < 30) pos = 40 + ((bmi-25)/5)*30;
+                else pos = 70 + Math.min(((bmi-30)/20)*30, 30);
+                marker.style.left = pos + '%';
+            } else {
+                bmiEl.textContent = '--';
+                categoryEl.textContent = '--';
+                marker.style.left = '0%';
+            }
+            if (height) {
+                const min = 18.5 * ((height/100)**2);
+                const max = 24.9 * ((height/100)**2);
+                document.getElementById('ideal-weight').textContent = `${((min+max)/2).toFixed(1)} кг`;
+                if (currentWeight) {
+                    const diff = currentWeight - (min+max)/2;
+                    document.getElementById('weight-diff').textContent = (diff > 0 ? '+' : '') + diff.toFixed(1) + ' кг';
+                } else {
+                    document.getElementById('weight-diff').textContent = '--';
+                }
+            } else {
+                document.getElementById('ideal-weight').textContent = '--';
+                document.getElementById('weight-diff').textContent = '--';
+            }
+        }
+
+        document.getElementById('save-height').addEventListener('click', () => {
+            const h = parseFloat(document.getElementById('height').value);
+            if (!h || h<100 || h>250) { showAlert('Рост от 100 до 250 см', 'error'); return; }
+            height = h;
+            localStorage.setItem('miifiit_height', height);
+            document.getElementById('height').value = '';
+            showAlert('Рост сохранён');
+            updateBMIDisplay();
+        });
+
+        document.getElementById('save-weight').addEventListener('click', () => {
+            const w = parseFloat(document.getElementById('weight').value);
+            if (!w || w<=0) { showAlert('Введите корректный вес', 'error'); return; }
+            const today = new Date().toISOString().split('T')[0];
+            const idx = weightData.findIndex(d => d.date === today);
+            const entry = { date: today, weight: w };
+            if (idx !== -1) weightData[idx] = entry;
+            else weightData.push(entry);
+            localStorage.setItem('miifiit_weight', JSON.stringify(weightData));
+            if (height) {
+                const bmi = calculateBMI(w, height);
+                const bmiIdx = bmiHistory.findIndex(b => b.date === today);
+                const bmiEntry = { date: today, weight: w, height, bmi };
+                if (bmiIdx !== -1) bmiHistory[bmiIdx] = bmiEntry;
+                else bmiHistory.push(bmiEntry);
+                localStorage.setItem('miifiit_bmi_history', JSON.stringify(bmiHistory));
+            }
+            document.getElementById('weight').value = '';
+            showAlert('Вес сохранён' + (height ? ' и ИМТ обновлён' : ''));
+            updateWeightHistory();
+            updateWeightChart();
+            updateBMIDisplay();
+            updateBMIHistory();
+        });
+
+        function updateWeightHistory() {
+            const container = document.getElementById('weight-history');
+            if (!weightData.length) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-weight-scale"></i><p>Нет данных</p></div>';
+                return;
+            }
+            const sorted = [...weightData].sort((a,b)=> new Date(b.date)-new Date(a.date));
+            let html = '';
+            sorted.slice(0,10).forEach(d => {
+                html += `<div class="history-item"><div class="history-date">${d.date}</div><div class="history-value">${d.weight} кг</div></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateBMIHistory() {
+            const container = document.getElementById('bmi-history');
+            if (!bmiHistory.length) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-calculator"></i><p>Нет данных</p></div>';
+                return;
+            }
+            const sorted = [...bmiHistory].sort((a,b)=> new Date(b.date)-new Date(a.date));
+            let html = '';
+            sorted.slice(0,10).forEach(d => {
+                html += `<div class="history-item"><div class="history-date">${d.date}</div><div class="history-value">${d.bmi.toFixed(1)}</div></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateWeightChart() {
+            const canvas = document.getElementById('weightChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (weightData.length < 2) {
+                if (weightChartInstance) weightChartInstance.destroy();
+                weightChartInstance = null;
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                ctx.fillStyle = 'rgba(var(--neon-rgb),0.5)';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Недостаточно данных', canvas.width/2, canvas.height/2);
+                return;
+            }
+            const sorted = [...weightData].sort((a,b)=> new Date(a.date)-new Date(b.date));
+            const labels = sorted.map(d => d.date.slice(5));
+            const values = sorted.map(d => d.weight);
+            if (weightChartInstance) weightChartInstance.destroy();
+            weightChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets: [{
+                    label: 'Вес (кг)', data: values,
+                    borderColor: `rgb(${neonColor})`, backgroundColor: `rgba(${neonColor}, 0.1)`,
+                    borderWidth: 3, pointBackgroundColor: `rgb(${neonColor})`, pointBorderColor: '#fff',
+                    pointRadius: 5, pointHoverRadius: 8, tension: 0.2, fill: true
+                }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: true } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'var(--text-secondary)' } },
+                        x: { grid: { display: false }, ticks: { color: 'var(--text-secondary)' } }
+                    }
+                }
+            });
+        }
+
+        // ============================================================================
+        // 10. ПИТАНИЕ (без изменений)
+        // ============================================================================
+        function showCalendarView() {
+            document.getElementById('calendarContainer').style.display = 'block';
+            document.getElementById('editContainer').classList.remove('active');
+            updateCalorieChart();
+        }
+
+        function showEditView(dateStr) {
+            document.getElementById('calendarContainer').style.display = 'none';
+            document.getElementById('editContainer').classList.add('active');
+            document.getElementById('selectedDateLabel').textContent = dateStr;
+            selectedDate = dateStr;
+            loadDayData(dateStr);
+        }
+
+        document.getElementById('prevMonthBtn').addEventListener('click', function() {
+            if (currentMonth === 0) { currentMonth = 11; currentYear--; } else { currentMonth--; }
+            renderCalendar(currentMonth, currentYear);
+            updateCalorieChart();
+        });
+
+        document.getElementById('nextMonthBtn').addEventListener('click', function() {
+            if (currentMonth === 11) { currentMonth = 0; currentYear++; } else { currentMonth++; }
+            renderCalendar(currentMonth, currentYear);
+            updateCalorieChart();
+        });
+
+        document.getElementById('backToCalendarBtn').addEventListener('click', function() {
+            showCalendarView();
+            renderCalendar(currentMonth, currentYear);
+        });
+
+        document.getElementById('saveDailyNormBtn').addEventListener('click', function() {
+            const val = parseInt(document.getElementById('dailyNormInput').value);
+            if (isNaN(val) || val <= 0) {
+                showAlert('Введите корректную норму калорий', 'error');
+                return;
+            }
+            dailyNorm = val;
+            localStorage.setItem('miifiit_daily_norm', dailyNorm);
+            showAlert('Норма сохранена: ' + dailyNorm + ' ккал');
+            renderCalendar(currentMonth, currentYear);
+            updateCalorieChart();
+        });
+
+        function updateDailyNormUI() {
+            document.getElementById('dailyNormInput').value = dailyNorm || '';
+        }
+
+        function getDayTotalCalories(dateStr) {
+            const day = mealData[dateStr];
+            if (!day) return 0;
+            let total = 0;
+            if (day.breakfast && day.breakfast.calories) total += parseInt(day.breakfast.calories) || 0;
+            if (day.lunch && day.lunch.calories) total += parseInt(day.lunch.calories) || 0;
+            if (day.dinner && day.dinner.calories) total += parseInt(day.dinner.calories) || 0;
+            if (day.snacks && day.snacks.calories) total += parseInt(day.snacks.calories) || 0;
+            return total;
+        }
+
+        function getCalorieColorClass(totalCal) {
+            if (!dailyNorm) return '';
+            const diff = totalCal - dailyNorm;
+            const absDiff = Math.abs(diff);
+            if (absDiff === 0) return 'green';
+            if (absDiff <= dailyNorm * 0.1) return 'yellow';
+            return 'red';
+        }
+
+        function renderCalendar(month, year) {
+            const grid = document.getElementById('calendarGrid');
+            const monthLabel = document.getElementById('currentMonthLabel');
+            const dateObj = new Date(year, month, 1);
+            const monthName = dateObj.toLocaleDateString(language === 'ru' ? 'ru-RU' : language === 'de' ? 'de-DE' : 'en-US', { month: 'long' });
+            monthLabel.textContent = monthName + ' ' + year;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            let startOffset = (firstDay === 0) ? 6 : firstDay - 1;
+
+            let html = '';
+            const shortDays = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(2026, 0, 4 + i);
+                shortDays.push(d.toLocaleDateString(language === 'ru' ? 'ru-RU' : language === 'de' ? 'de-DE' : 'en-US', { weekday: 'short' }));
+            }
+            html += `<div class="weekday">${shortDays[0]}</div><div class="weekday">${shortDays[1]}</div><div class="weekday">${shortDays[2]}</div><div class="weekday">${shortDays[3]}</div><div class="weekday">${shortDays[4]}</div><div class="weekday">${shortDays[5]}</div><div class="weekday">${shortDays[6]}</div>`;
+
+            for (let i = 0; i < startOffset; i++) {
+                html += `<div class="day-cell empty"></div>`;
+            }
+
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+                const totalCal = getDayTotalCalories(dateStr);
+                const colorClass = totalCal > 0 ? getCalorieColorClass(totalCal) : '';
+                const isSelected = (selectedDate === dateStr);
+                const isToday = (dateStr === todayStr);
+                let classes = 'day-cell';
+                if (isSelected) classes += ' selected';
+                if (isToday) classes += ' today';
+
+                html += `<div class="${classes}" data-date="${dateStr}">
+                    <div class="day-number">${day}</div>
+                    ${totalCal > 0 ? `<div class="day-calories ${colorClass}">${totalCal}</div>` : ''}
+                </div>`;
+            }
+
+            grid.innerHTML = html;
+
+            document.querySelectorAll('.day-cell:not(.empty)').forEach(cell => {
+                cell.addEventListener('click', function() {
+                    const date = this.dataset.date;
+                    showEditView(date);
+                });
+            });
+        }
+
+        function loadDayData(dateStr) {
+            const day = mealData[dateStr] || {};
+            document.getElementById('breakfastName').value = day.breakfast?.name || '';
+            document.getElementById('breakfastCal').value = day.breakfast?.calories || '';
+            document.getElementById('lunchName').value = day.lunch?.name || '';
+            document.getElementById('lunchCal').value = day.lunch?.calories || '';
+            document.getElementById('dinnerName').value = day.dinner?.name || '';
+            document.getElementById('dinnerCal').value = day.dinner?.calories || '';
+            document.getElementById('snacksName').value = day.snacks?.name || '';
+            document.getElementById('snacksCal').value = day.snacks?.calories || '';
+            updateDayTotalDisplay(dateStr);
+        }
+
+        function updateDayTotalDisplay(dateStr) {
+            const total = getDayTotalCalories(dateStr);
+            document.getElementById('dayTotalCalories').textContent = total;
+        }
+
+        document.getElementById('saveMealDayBtn').addEventListener('click', function() {
+            if (!selectedDate) {
+                showAlert('Сначала выберите день в календаре', 'warning');
+                return;
+            }
+            const breakfastName = document.getElementById('breakfastName').value.trim();
+            const breakfastCal = parseInt(document.getElementById('breakfastCal').value) || 0;
+            const lunchName = document.getElementById('lunchName').value.trim();
+            const lunchCal = parseInt(document.getElementById('lunchCal').value) || 0;
+            const dinnerName = document.getElementById('dinnerName').value.trim();
+            const dinnerCal = parseInt(document.getElementById('dinnerCal').value) || 0;
+            const snacksName = document.getElementById('snacksName').value.trim();
+            const snacksCal = parseInt(document.getElementById('snacksCal').value) || 0;
+
+            if (!breakfastName && !lunchName && !dinnerName && !snacksName && breakfastCal===0 && lunchCal===0 && dinnerCal===0 && snacksCal===0) {
+                showAlert('Заполните хотя бы один приём пищи', 'warning');
+                return;
+            }
+
+            const dayData = {
+                breakfast: { name: breakfastName || '', calories: breakfastCal },
+                lunch: { name: lunchName || '', calories: lunchCal },
+                dinner: { name: dinnerName || '', calories: dinnerCal },
+                snacks: { name: snacksName || '', calories: snacksCal }
+            };
+            mealData[selectedDate] = dayData;
+            localStorage.setItem('miifiit_meals_v2', JSON.stringify(mealData));
+            showAlert('Данные за ' + selectedDate + ' сохранены');
+            renderCalendar(currentMonth, currentYear);
+            updateDayTotalDisplay(selectedDate);
+            updateCalorieChart();
+        });
+
+        document.getElementById('clearMealDayBtn').addEventListener('click', function() {
+            if (!selectedDate) {
+                showAlert('Сначала выберите день', 'warning');
+                return;
+            }
+            if (confirm('Удалить все данные о питании за ' + selectedDate + '?')) {
+                delete mealData[selectedDate];
+                localStorage.setItem('miifiit_meals_v2', JSON.stringify(mealData));
+                document.getElementById('breakfastName').value = '';
+                document.getElementById('breakfastCal').value = '';
+                document.getElementById('lunchName').value = '';
+                document.getElementById('lunchCal').value = '';
+                document.getElementById('dinnerName').value = '';
+                document.getElementById('dinnerCal').value = '';
+                document.getElementById('snacksName').value = '';
+                document.getElementById('snacksCal').value = '';
+                updateDayTotalDisplay(selectedDate);
+                renderCalendar(currentMonth, currentYear);
+                updateCalorieChart();
+                showAlert('День очищен');
+            }
+        });
+
+        function updateMonthLabel() {
+            const dateObj = new Date(currentYear, currentMonth, 1);
+            const monthName = dateObj.toLocaleDateString(language === 'ru' ? 'ru-RU' : language === 'de' ? 'de-DE' : 'en-US', { month: 'long' });
+            document.getElementById('currentMonthLabel').textContent = monthName + ' ' + currentYear;
+        }
+
+        function updateCalorieChart() {
+            const canvas = document.getElementById('calorieChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const labels = [];
+            const data = [];
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+                labels.push(day);
+                data.push(getDayTotalCalories(dateStr));
+            }
+            const hasData = data.some(v => v > 0);
+            if (!hasData) {
+                if (calorieChartInstance) calorieChartInstance.destroy();
+                calorieChartInstance = null;
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                ctx.fillStyle = 'rgba(var(--neon-rgb),0.5)';
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Нет данных за этот месяц', canvas.width/2, canvas.height/2);
+                return;
+            }
+            const pointColors = data.map(cal => {
+                if (cal === 0) return 'rgba(255,255,255,0.2)';
+                const colorClass = getCalorieColorClass(cal);
+                if (colorClass === 'green') return '#00ff9d';
+                if (colorClass === 'yellow') return '#ffcc00';
+                return '#ff4757';
+            });
+
+            if (calorieChartInstance) calorieChartInstance.destroy();
+            calorieChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Калории',
+                        data: data,
+                        borderColor: `rgb(${neonColor})`,
+                        backgroundColor: `rgba(${neonColor}, 0.1)`,
+                        borderWidth: 2,
+                        pointBackgroundColor: pointColors,
+                        pointBorderColor: '#fff',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        tension: 0.2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y + ' ккал';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.08)' },
+                            ticks: { color: 'var(--text-secondary)', stepSize: 200 }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: 'var(--text-secondary)', maxTicksLimit: 15 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ============================================================================
+        // 11. СТАТИСТИКА (без изменений)
+        // ============================================================================
+        function updateStats() {
+            const totalDays = trainingData.filter(t => !t.rest).length;
+            const totalPush = trainingData.reduce((s,t)=> s + (t.pushups||0), 0);
+            const totalPlank = trainingData.reduce((s,t)=> s + (t.plank||0), 0);
+            const totalBike = trainingData.reduce((s,t)=> s + (t.cycling?.distance||0), 0);
+            document.getElementById('total-days').textContent = totalDays;
+            document.getElementById('total-pushups').textContent = totalPush;
+            document.getElementById('total-plank').textContent = (totalPlank/60).toFixed(1);
+            document.getElementById('total-cycling').textContent = totalBike.toFixed(1);
+
+            const maxPush = trainingData.length ? Math.max(...trainingData.map(t=>t.pushups||0)) : 0;
+            const maxPlank = trainingData.length ? Math.max(...trainingData.map(t=>t.plank||0)) : 0;
+            const maxBike = trainingData.length ? Math.max(...trainingData.map(t=>t.cycling?.distance||0)) : 0;
+            const maxCal = trainingData.length ? Math.max(...trainingData.map(t=>t.cycling?.calories||0)) : 0;
+            let rec = '';
+            if (maxPush) rec += `<div class="history-item"><div>Отжимания (раз)</div><div class="history-value">${maxPush}</div></div>`;
+            if (maxPlank) rec += `<div class="history-item"><div>Планка (сек)</div><div class="history-value">${maxPlank}</div></div>`;
+            if (maxBike) rec += `<div class="history-item"><div>Вело (${unit})</div><div class="history-value">${maxBike.toFixed(1)}</div></div>`;
+            if (maxCal) rec += `<div class="history-item"><div>Калории</div><div class="history-value">${maxCal}</div></div>`;
+            document.getElementById('records-list').innerHTML = rec || '<div class="empty-state">Нет рекордов</div>';
+
+            const recent = [...trainingData].sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0,5);
+            let recHtml = '';
+            recent.forEach(t => {
+                if (t.rest) recHtml += `<div class="history-item"><div class="history-date">${t.date}</div><div class="history-value">${translations[language].restDay}</div></div>`;
+                else {
+                    const acts = [];
+                    if (t.pushups) acts.push(`${t.pushups} отж`);
+                    if (t.plank) acts.push(`${t.plank}с`);
+                    if (t.cycling?.distance) acts.push(`${t.cycling.distance} ${unit}`);
+                    recHtml += `<div class="history-item"><div class="history-date">${t.date}</div><div class="history-value">${acts.join(', ') || 'Нет данных'}</div></div>`;
+                }
+            });
+            document.getElementById('recent-trainings').innerHTML = recHtml || '<div class="empty-state">Нет тренировок</div>';
+        }
+
+        // ============================================================================
+        // 12. ЭКСПОРТ / ИМПОРТ / ОЧИСТКА
+        // ============================================================================
+        document.getElementById('export-data').addEventListener('click', () => {
+            const data = {
+                trainings: trainingData,
+                weight: weightData,
+                height,
+                bmiHistory,
+                meals: mealData,
+                dailyNorm: dailyNorm,
+                ai: aiData
+            };
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `miifiit_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+        });
+
+        document.getElementById('import-data').addEventListener('click', () => document.getElementById('import-file').click());
+
+        document.getElementById('import-file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if (confirm('Заменить текущие данные?')) {
+                        trainingData = data.trainings || [];
+                        weightData = data.weight || [];
+                        height = data.height || null;
+                        bmiHistory = data.bmiHistory || [];
+                        mealData = data.meals || {};
+                        dailyNorm = data.dailyNorm || 2000;
+                        if (data.ai) aiData = data.ai;
+                        else aiData = JSON.parse(localStorage.getItem('miifiit_ai_data')) || {};
+                        localStorage.setItem('miifiit_trainings', JSON.stringify(trainingData));
+                        localStorage.setItem('miifiit_weight', JSON.stringify(weightData));
+                        if (height) localStorage.setItem('miifiit_height', height);
+                        localStorage.setItem('miifiit_bmi_history', JSON.stringify(bmiHistory));
+                        localStorage.setItem('miifiit_meals_v2', JSON.stringify(mealData));
+                        localStorage.setItem('miifiit_daily_norm', dailyNorm);
+                        localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+                        updateStats(); updateWeightHistory(); updateWeekStats(); updateWeightChart(); updateBMIDisplay();
+                        renderCalendar(currentMonth, currentYear);
+                        updateDailyNormUI();
+                        updateCalorieChart();
+                        if (selectedDate) loadDayData(selectedDate);
+                        renderAITab();
+                        showAlert('Данные импортированы');
+                    }
+                } catch { showAlert('Ошибка файла', 'error'); }
+            };
+            reader.readAsText(file);
+        });
+
+        document.getElementById('clear-data').addEventListener('click', () => {
+            if (confirm('Удалить все данные?')) {
+                localStorage.clear();
+                trainingData = []; weightData = []; height = null; bmiHistory = []; mealData = {};
+                dailyNorm = 2000;
+                aiData = {
+                    dayGoals: [],
+                    monthGoals: [],
+                    recommendation: 'Сегодня лучше сделать тренировку груди и рук. Не забудь выполнить разминку 10 минут.',
+                    mood: '',
+                    dayCompletion: 0,
+                    monthCompletion: 0
+                };
+                localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+                updateStats(); updateWeightHistory(); updateWeekStats(); updateWeightChart(); updateBMIDisplay();
+                renderCalendar(currentMonth, currentYear);
+                updateDailyNormUI();
+                updateCalorieChart();
+                document.getElementById('breakfastName').value = '';
+                document.getElementById('breakfastCal').value = '';
+                document.getElementById('lunchName').value = '';
+                document.getElementById('lunchCal').value = '';
+                document.getElementById('dinnerName').value = '';
+                document.getElementById('dinnerCal').value = '';
+                document.getElementById('snacksName').value = '';
+                document.getElementById('snacksCal').value = '';
+                document.getElementById('dayTotalCalories').textContent = '0';
+                document.getElementById('selectedDateLabel').textContent = translations[language].selectDay || 'Выберите день в календаре';
+                renderAITab();
+                showAlert('Все данные удалены');
+            }
+        });
+
+        // ============================================================================
+        // 13. ЛОГИКА ИИ ТРЕНЕРА (цели дня и месяца)
+        // ============================================================================
+        function getTodayStr() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function getCurrentMonthStr() {
+            const d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        }
+
+        function initDayGoals() {
+            const today = getTodayStr();
+            const dayGoals = aiData.dayGoals || [];
+            aiData.dayGoals = dayGoals.filter(g => g.date === today);
+            aiData.dayGoals = aiData.dayGoals.map(g => {
+                if (!g.id) g.id = Date.now() + Math.random();
+                if (!g.unit) g.unit = 'раз';
+                if (g.progress === undefined) g.progress = 0;
+                if (g.completed === undefined) g.completed = false;
+                return g;
+            });
+            localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+        }
+
+        function initMonthGoals() {
+            const month = getCurrentMonthStr();
+            const monthGoals = aiData.monthGoals || [];
+            aiData.monthGoals = monthGoals.filter(g => g.month === month);
+            aiData.monthGoals = aiData.monthGoals.map(g => {
+                if (!g.id) g.id = Date.now() + Math.random();
+                if (!g.unit) g.unit = 'раз';
+                if (g.progress === undefined) g.progress = 0;
+                if (g.completed === undefined) g.completed = false;
+                return g;
+            });
+            localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+        }
+
+        function openAiDayConfig() {
+            const container = document.getElementById('aiDayConfigContent');
+            const today = getTodayStr();
+            let goals = aiData.dayGoals.filter(g => g.date === today);
+            let html = '';
+            if (goals.length === 0) {
+                html = `<p style="color:var(--text-secondary);">Нет целей на сегодня. Добавьте ниже.</p>`;
+            }
+            html += `<div id="dayGoalsList">`;
+            goals.forEach((g, idx) => {
+                html += `
+                    <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+                        <input type="text" value="${g.name}" data-idx="${idx}" class="dayGoalName" placeholder="Название" style="flex:2; padding:8px 12px; background:rgba(0,0,0,0.3); border-radius:30px; border:1px solid rgba(var(--neon-rgb),0.2); color:var(--text-primary);">
+                        <input type="number" value="${g.target}" data-idx="${idx}" class="dayGoalTarget" placeholder="Цель" style="flex:1; padding:8px 12px; background:rgba(0,0,0,0.3); border-radius:30px; border:1px solid rgba(var(--neon-rgb),0.2); color:var(--text-primary);">
+                        <span style="color:var(--text-secondary); font-size:0.8rem;">${g.unit || 'раз'}</span>
+                        <button class="btn btn-rest" style="padding:4px 10px; font-size:0.8rem;" data-idx="${idx}" onclick="removeDayGoal(${idx})"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            html += `
+                <div style="display:flex; gap:8px; margin-top:10px;">
+                    <input type="text" id="newDayGoalName" placeholder="Название" style="flex:2; padding:8px 12px; background:rgba(0,0,0,0.3); border-radius:30px; border:1px solid rgba(var(--neon-rgb),0.2); color:var(--text-primary);">
+                    <input type="number" id="newDayGoalTarget" placeholder="Цель" style="flex:1; padding:8px 12px; background:rgba(0,0,0,0.3); border-radius:30px; border:1px solid rgba(var(--neon-rgb),0.2); color:var(--text-primary);">
+                    <select id="newDayGoalUnit" style="flex:1; padding:8px 12px; background:rgba(0,0,0,0.3); border-radius:30px; border:1px solid rgba(var(--neon-rgb),0.2); color:var(--text-primary);">
+                        <option value="раз">раз</option>
+                        <option value="сек">сек</option>
+                        <option value="км">км</option>
+                        <option value="ккал">ккал</option>
+                        <option value="л">л</option>
+                        <option value="мин">мин</option>
+                    </select>
+                    <button class="btn btn-primary" id="addDayGoalBtn" style="padding:8px 16px; font-size:0.9rem;"><i class="fas fa-plus"></i></button>
+                </div>
+                <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn btn-secondary" id="addPresetDayGoal" style="padding:6px 14px; font-size:0.8rem;" data-name="Отжимания" data-target="50" data-unit="раз">+ Отжимания</button>
+                    <button class="btn btn-secondary" id="addPresetDayGoal" style="padding:6px 14px; font-size:0.8rem;" data-name="Планка" data-target="60" data-unit="сек">+ Планка</button>
+                    <button class="btn btn-secondary" id="addPresetDayGoal" style="padding:6px 14px; font-size:0.8rem;" data-name="Велотренажер" data-target="10" data-unit="км">+ Вело</button>
+                    <button class="btn btn-secondary" id="addPresetDayGoal" style="padding:6px 14px; font-size:0.8rem;" data-name="Своя цель" data-target="1" data-unit="раз">+ Своя</button>
+                </div>
+            `;
+            container.innerHTML = html;
+
+            document.getElementById('addDayGoalBtn').addEventListener('click', function() {
+                const name = document.getElementById('newDayGoalName').value.trim();
+                const target = parseFloat(document.getElementById('newDayGoalTarget').value);
+                const unit = document.getElementById('newDayGoalUnit').value;
+                if (!name || isNaN(target) || target <= 0) {
+                    showAlert('Введите название и цель', 'warning');
+                    return;
+                }
+                const today = getTodayStr();
+                let goals = aiData.dayGoals.filter(g => g.date === today);
+                const newGoal = {
+                    id: Date.now() + Math.random(),
+                    date: today,
+                    name: name,
+                    target: target,
+                    unit: unit,
+                    progress: 0,
+                    completed: false
+                };
+                goals.push(newGoal);
+                aiData.dayGoals = aiData.dayGoals.filter(g => g.date !== today).concat(goals);
+                localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+                openAiDayConfig();
+                showAlert('Цель добавлена');
+            });
+
+            document.querySelectorAll('#addPresetDayGoal').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const name = this.dataset.name;
+                    const target = parseFloat(this.dataset.target);
+                    const unit = this.dataset.unit;
+                    const today = getTodayStr();
+                    let goals = aiData.dayGoals.filter(g => g.date === today);
+                    if (goals.some(g => g.name === name)) {
+                        showAlert('Такая цель уже есть', 'warning');
+                        return;
+                    }
+                    const newGoal = {
+                        id: Date.now() + Math.random(),
+                        date: today,
+                        name: name,
+                        target: target,
+                        unit: unit,
+                        progress: 0,
+                        completed: false
+                    };
+                    goals.push(newGoal);
+                    aiData.dayGoals = aiData.dayGoals.filter(g => g.date !== today).concat(goals);
+                    localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+                    openAiDayConfig();
+                    showAlert('Цель добавлена');
+                });
+            });
+
+            window.removeDayGoal = function(idx) {
+                const today = getTodayStr();
+                let goals = aiData.dayGoals.filter(g => g.date === today);
+                goals.splice(idx, 1);
+                aiData.dayGoals = aiData.dayGoals.filter(g => g.date !== today).concat(goals);
+                localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+                openAiDayConfig();
+                showAlert('Цель удалена');
+            };
+        }
+
+        function saveAiDayConfig() {
+            const today = getTodayStr();
+            const nameInputs = document.querySelectorAll('.dayGoalName');
+            const targetInputs = document.querySelectorAll('.dayGoalTarget');
+            let goals = [];
+            nameInputs.forEach((inp, i) => {
+                const name = inp.value.trim();
+                const target = parseFloat(targetInputs[i].value);
+                if (name && !isNaN(target) && target > 0) {
+                    const existing = aiData.dayGoals.filter(g => g.date === today)[i] || {};
+                    goals.push({
+                        id: existing.id || Date.now() + Math.random(),
+                        date: today,
+                        name: name,
+                        target: target,
+                        unit: existing.unit || 'раз',
+                        progress: existing.progress || 0,
+                        completed: existing.completed || false
+                    });
+                }
+            });
+            aiData.dayGoals = aiData.dayGoals.filter(g => g.date !== today).concat(goals);
+            localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+            showAlert('Цели дня сохранены');
+        }
+
+        function openAiMonthConfig() {
+            const container = document.getElementById('aiMonthConfigContent');
+            const month = getCurrentMonthStr();
+            let goals = aiData.monthGoals.filter(g => g.month === month);
+            let html = '';
+            if (goals.length === 0) {
+                html = `<p style="color:var(--text-secondary);">Нет целей на этот месяц. Добавьте ниже.</p>`;
+            }
+            html += `<div id="monthGoalsList">`;
+            goals.forEach((g, idx) => {
+                html += `
+                    <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+                        <input type="text" value="${g.name}" data-idx="${idx}" class="monthGoalName" placeholder="Название" style="flex:2; padding:8px 12px; background:rgba(0,0,0,0.3); border-radius:30px; border:1px solid rgba(var(--neon-rgb),0.2); color:var(--text-primary);">
+                        <input type="number" value="${g.target}" data-idx="${idx}" class="monthGoalTarget" placeholder="Цель" style="flex:1; padding:8px 12px; background:rgba(0,0,0,0.3); border-radius:30px; border:1px solid rgba(var(--neon-rgb),0.2); color:var(--text-primary);">
+                        <span style="color:var(--text-secondary); font-size:0.8rem;">${g.unit || 'раз'}</span>
+                        <button class="btn btn-rest" style="padding:4px 10px; font-size:0.8rem;" data-idx="${idx}" onclick="removeMonthGoal(${idx})"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            html += `
+                <div style="display:flex; gap:8px; margin-top:10px;">
+                    <input type="text" id="newMonthGoalName" placeholder="Название" style="flex:2; padding:8px 12px; background:rgba(0,0,0,0.3); border-radius:30px; border:1px solid rgba(var(--neon-rgb),0.2); color:var(--text-primary);">
+                    <input type="number" id="newMonthGoalTarget" placeholder="Цель" style="flex:1; padding:8px 12px; background:rgba(0,0,0,0.3); border-radius:30px; border:1px solid rgba(var(--neon-rgb),0.2); color:var(--text-primary);">
+                    <select id="newMonthGoalUnit" style="flex:1; padding:8px 12px; background:rgba(0,0,0,0.3); border-radius:30px; border:1px solid rgba(var(--neon-rgb),0.2); color:var(--text-primary);">
+                        <option value="раз">раз</option>
+                        <option value="сек">сек</option>
+                        <option value="км">км</option>
+                        <option value="ккал">ккал</option>
+                        <option value="кг">кг</option>
+                    </select>
+                    <button class="btn btn-primary" id="addMonthGoalBtn" style="padding:8px 16px; font-size:0.9rem;"><i class="fas fa-plus"></i></button>
+                </div>
+                <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn btn-secondary" id="addPresetMonthGoal" style="padding:6px 14px; font-size:0.8rem;" data-name="Отжимания" data-target="200" data-unit="раз">+ Отжимания</button>
+                    <button class="btn btn-secondary" id="addPresetMonthGoal" style="padding:6px 14px; font-size:0.8rem;" data-name="Планка" data-target="1800" data-unit="сек">+ Планка</button>
+                    <button class="btn btn-secondary" id="addPresetMonthGoal" style="padding:6px 14px; font-size:0.8rem;" data-name="Велотренажер" data-target="50" data-unit="км">+ Вело</button>
+                    <button class="btn btn-secondary" id="addPresetMonthGoal" style="padding:6px 14px; font-size:0.8rem;" data-name="Вес" data-target="2" data-unit="кг">+ Вес</button>
+                    <button class="btn btn-secondary" id="addPresetMonthGoal" style="padding:6px 14px; font-size:0.8rem;" data-name="Своя цель" data-target="1" data-unit="раз">+ Своя</button>
+                </div>
+            `;
+            container.innerHTML = html;
+
+            document.getElementById('addMonthGoalBtn').addEventListener('click', function() {
+                const name = document.getElementById('newMonthGoalName').value.trim();
+                const target = parseFloat(document.getElementById('newMonthGoalTarget').value);
+                const unit = document.getElementById('newMonthGoalUnit').value;
+                if (!name || isNaN(target) || target <= 0) {
+                    showAlert('Введите название и цель', 'warning');
+                    return;
+                }
+                const month = getCurrentMonthStr();
+                let goals = aiData.monthGoals.filter(g => g.month === month);
+                const newGoal = {
+                    id: Date.now() + Math.random(),
+                    month: month,
+                    name: name,
+                    target: target,
+                    unit: unit,
+                    progress: 0,
+                    completed: false
+                };
+                goals.push(newGoal);
+                aiData.monthGoals = aiData.monthGoals.filter(g => g.month !== month).concat(goals);
+                localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+                openAiMonthConfig();
+                showAlert('Цель добавлена');
+            });
+
+            document.querySelectorAll('#addPresetMonthGoal').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const name = this.dataset.name;
+                    const target = parseFloat(this.dataset.target);
+                    const unit = this.dataset.unit;
+                    const month = getCurrentMonthStr();
+                    let goals = aiData.monthGoals.filter(g => g.month === month);
+                    if (goals.some(g => g.name === name)) {
+                        showAlert('Такая цель уже есть', 'warning');
+                        return;
+                    }
+                    const newGoal = {
+                        id: Date.now() + Math.random(),
+                        month: month,
+                        name: name,
+                        target: target,
+                        unit: unit,
+                        progress: 0,
+                        completed: false
+                    };
+                    goals.push(newGoal);
+                    aiData.monthGoals = aiData.monthGoals.filter(g => g.month !== month).concat(goals);
+                    localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+                    openAiMonthConfig();
+                    showAlert('Цель добавлена');
+                });
+            });
+
+            window.removeMonthGoal = function(idx) {
+                const month = getCurrentMonthStr();
+                let goals = aiData.monthGoals.filter(g => g.month === month);
+                goals.splice(idx, 1);
+                aiData.monthGoals = aiData.monthGoals.filter(g => g.month !== month).concat(goals);
+                localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+                openAiMonthConfig();
+                showAlert('Цель удалена');
+            };
+        }
+
+        function saveAiMonthConfig() {
+            const month = getCurrentMonthStr();
+            const nameInputs = document.querySelectorAll('.monthGoalName');
+            const targetInputs = document.querySelectorAll('.monthGoalTarget');
+            let goals = [];
+            nameInputs.forEach((inp, i) => {
+                const name = inp.value.trim();
+                const target = parseFloat(targetInputs[i].value);
+                if (name && !isNaN(target) && target > 0) {
+                    const existing = aiData.monthGoals.filter(g => g.month === month)[i] || {};
+                    goals.push({
+                        id: existing.id || Date.now() + Math.random(),
+                        month: month,
+                        name: name,
+                        target: target,
+                        unit: existing.unit || 'раз',
+                        progress: existing.progress || 0,
+                        completed: existing.completed || false
+                    });
+                }
+            });
+            aiData.monthGoals = aiData.monthGoals.filter(g => g.month !== month).concat(goals);
+            localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+            showAlert('Цели месяца сохранены');
+        }
+
+        // ============================================================================
+        // 14. РЕНДЕРИНГ ВКЛАДКИ ИИ ТРЕНЕРА
+        // ============================================================================
+        function renderAITab() {
+            initDayGoals();
+            initMonthGoals();
+
+            const dayContainer = document.getElementById('aiDayGoalsContainer');
+            const today = getTodayStr();
+            const dayGoals = aiData.dayGoals.filter(g => g.date === today);
+            if (dayGoals.length === 0) {
+                dayContainer.innerHTML = `<div style="text-align:center; padding:10px; color:var(--text-secondary);">Нет целей на сегодня. Настройте их.</div>`;
+            } else {
+                let html = '';
+                dayGoals.forEach(g => {
+                    const progress = g.completed ? 100 : Math.min((g.progress / g.target) * 100, 100);
+                    const circumference = 2 * Math.PI * 25;
+                    const offset = circumference - (progress / 100) * circumference;
+                    html += `
+                        <div class="goal-item">
+                            <div class="circle-wrap">
+                                <svg viewBox="0 0 60 60">
+                                    <circle class="bg" cx="30" cy="30" r="25"/>
+                                    <circle class="progress" cx="30" cy="30" r="25" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"/>
+                                </svg>
+                                <div class="center-text">${Math.round(progress)}%</div>
+                            </div>
+                            <div class="goal-info">
+                                <div class="goal-title">${g.name}</div>
+                                <div class="goal-desc">${g.progress} / ${g.target} ${g.unit}</div>
+                            </div>
+                            <div class="goal-actions">
+                                <button class="btn-done ${g.completed ? 'completed' : ''}" data-id="${g.id}">${g.completed ? 'Выполнено' : 'Отметить'}</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                dayContainer.innerHTML = html;
+
+                dayContainer.querySelectorAll('.btn-done').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const goal = aiData.dayGoals.find(g => g.id == id);
+                        if (goal) {
+                            goal.completed = !goal.completed;
+                            if (goal.completed) goal.progress = goal.target;
+                            else goal.progress = 0;
+                            localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+                            renderAITab();
+                            showAlert(goal.completed ? 'Цель выполнена!' : 'Цель отмечена как невыполненная', 'success');
+                        }
+                    });
+                });
+            }
+
+            const monthContainer = document.getElementById('aiMonthGoalsContainer');
+            const month = getCurrentMonthStr();
+            const monthGoals = aiData.monthGoals.filter(g => g.month === month);
+            if (monthGoals.length === 0) {
+                monthContainer.innerHTML = `<div style="text-align:center; padding:10px; color:var(--text-secondary);">Нет целей на месяц. Настройте их.</div>`;
+            } else {
+                let html = '';
+                monthGoals.forEach(g => {
+                    let progress = g.progress || 0;
+                    if (g.name === 'Отжимания') {
+                        const monthTrainings = trainingData.filter(t => t.date.startsWith(month) && !t.rest);
+                        progress = monthTrainings.reduce((sum, t) => sum + (t.pushups || 0), 0);
+                    } else if (g.name === 'Планка') {
+                        const monthTrainings = trainingData.filter(t => t.date.startsWith(month) && !t.rest);
+                        progress = monthTrainings.reduce((sum, t) => sum + (t.plank || 0), 0);
+                    } else if (g.name === 'Велотренажер') {
+                        const monthTrainings = trainingData.filter(t => t.date.startsWith(month) && !t.rest);
+                        progress = monthTrainings.reduce((sum, t) => sum + (t.cycling?.distance || 0), 0);
+                    } else if (g.name === 'Вес') {
+                        const monthWeights = weightData.filter(w => w.date.startsWith(month));
+                        if (monthWeights.length >= 2) {
+                            const first = monthWeights[0].weight;
+                            const last = monthWeights[monthWeights.length-1].weight;
+                            progress = last - first;
+                        } else {
+                            progress = 0;
+                        }
+                    }
+                    // Сохраняем прогресс
+                    const existing = aiData.monthGoals.find(mg => mg.id === g.id);
+                    if (existing) {
+                        existing.progress = progress;
+                    }
+                    localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+
+                    const percent = g.target > 0 ? Math.min((progress / g.target) * 100, 100) : 0;
+                    const circumference = 2 * Math.PI * 25;
+                    const offset = circumference - (percent / 100) * circumference;
+                    const completed = progress >= g.target;
+                    html += `
+                        <div class="goal-item">
+                            <div class="circle-wrap">
+                                <svg viewBox="0 0 60 60">
+                                    <circle class="bg" cx="30" cy="30" r="25"/>
+                                    <circle class="progress" cx="30" cy="30" r="25" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"/>
+                                </svg>
+                                <div class="center-text">${Math.round(percent)}%</div>
+                            </div>
+                            <div class="goal-info">
+                                <div class="goal-title">${g.name}</div>
+                                <div class="goal-desc">${progress} / ${g.target} ${g.unit}</div>
+                            </div>
+                            <div class="goal-actions">
+                                <button class="btn-done ${completed ? 'completed' : ''}" data-id="${g.id}" style="${completed ? '' : 'display:none;'}">${completed ? 'Выполнено' : ''}</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                monthContainer.innerHTML = html;
+            }
+
+            document.getElementById('aiRecommendationDisplay').textContent = aiData.recommendation || 'Рекомендация не задана';
+
+            const dayTotal = dayGoals.length;
+            const dayCompleted = dayGoals.filter(g => g.completed).length;
+            const dayPercent = dayTotal > 0 ? Math.round((dayCompleted / dayTotal) * 100) : 0;
+            document.getElementById('aiDayCompletion').textContent = dayPercent + '%';
+
+            const monthTotal = monthGoals.length;
+            const monthCompleted = monthGoals.filter(g => {
+                let prog = g.progress || 0;
+                if (g.name === 'Отжимания') {
+                    const monthTrainings = trainingData.filter(t => t.date.startsWith(month) && !t.rest);
+                    prog = monthTrainings.reduce((sum, t) => sum + (t.pushups || 0), 0);
+                } else if (g.name === 'Планка') {
+                    const monthTrainings = trainingData.filter(t => t.date.startsWith(month) && !t.rest);
+                    prog = monthTrainings.reduce((sum, t) => sum + (t.plank || 0), 0);
+                } else if (g.name === 'Велотренажер') {
+                    const monthTrainings = trainingData.filter(t => t.date.startsWith(month) && !t.rest);
+                    prog = monthTrainings.reduce((sum, t) => sum + (t.cycling?.distance || 0), 0);
+                } else if (g.name === 'Вес') {
+                    const monthWeights = weightData.filter(w => w.date.startsWith(month));
+                    if (monthWeights.length >= 2) {
+                        const first = monthWeights[0].weight;
+                        const last = monthWeights[monthWeights.length-1].weight;
+                        prog = last - first;
+                    }
+                }
+                return prog >= g.target;
+            }).length;
+            const monthPercent = monthTotal > 0 ? Math.round((monthCompleted / monthTotal) * 100) : 0;
+            document.getElementById('aiMonthCompletion').textContent = monthPercent + '%';
+
+            document.getElementById('aiMoodDisplay').value = aiData.mood || 'Как ты себя чувствуешь?';
+            document.getElementById('aiMoodDisplay').addEventListener('click', function() {
+                document.getElementById('aiMoodInput').value = aiData.mood || '';
+                aiStatsConfigModal.style.display = 'flex';
+            });
+        }
+
+        // ============================================================================
+        // 15. ТАЙМЕРЫ
+        // ============================================================================
+        function startTimers() {
+            if (dayTimerInterval) clearInterval(dayTimerInterval);
+            if (monthTimerInterval) clearInterval(monthTimerInterval);
+
+            dayTimerInterval = setInterval(() => {
+                const now = new Date();
+                const endOfDay = new Date(now);
+                endOfDay.setHours(23, 59, 59, 999);
+                const diff = endOfDay - now;
+                if (diff <= 0) {
+                    const today = getTodayStr();
+                    const goals = aiData.dayGoals.filter(g => g.date === today);
+                    if (goals.length > 0) {
+                        aiData.dayGoals = aiData.dayGoals.map(g => {
+                            if (g.date === today) {
+                                g.progress = 0;
+                                g.completed = false;
+                            }
+                            return g;
+                        });
+                        localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+                        renderAITab();
+                        showAlert('Новый день! Цели сброшены.', 'info');
+                    }
+                    clearInterval(dayTimerInterval);
+                    startTimers();
+                    return;
+                }
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((diff % (1000 * 60)) / 1000);
+                document.getElementById('dayTimerDisplay').textContent = `⏳ ${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+            }, 1000);
+
+            monthTimerInterval = setInterval(() => {
+                const now = new Date();
+                const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+                const diff = endOfMonth - now;
+                if (diff <= 0) {
+                    const month = getCurrentMonthStr();
+                    const goals = aiData.monthGoals.filter(g => g.month === month);
+                    if (goals.length > 0) {
+                        aiData.monthGoals = aiData.monthGoals.map(g => {
+                            if (g.month === month) {
+                                g.progress = 0;
+                                g.completed = false;
+                            }
+                            return g;
+                        });
+                        localStorage.setItem('miifiit_ai_data', JSON.stringify(aiData));
+                        renderAITab();
+                        showAlert('Новый месяц! Цели сброшены.', 'info');
+                    }
+                    clearInterval(monthTimerInterval);
+                    startTimers();
+                    return;
+                }
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                document.getElementById('monthTimerDisplay').textContent = `⏳ ${days}д ${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+            }, 1000);
+        }
+
+        // ============================================================================
+        // 16. ИНИЦИАЛИЗАЦИЯ
+        // ============================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            setLanguage(language);
+            updateCurrentDate();
+            applyTheme();
+            applyNeonColor(neonColor);
+            document.getElementById('unitSelect').value = unit;
+            soundToggle.checked = soundEnabled;
+            vibroToggle.checked = vibroEnabled;
+            updateStats();
+            updateWeightHistory();
+            updateBMIHistory();
+            loadCurrentTraining();
+            updateWeekStats();
+            renderCalendar(currentMonth, currentYear);
+            updateDailyNormUI();
+            updateCalorieChart();
+            selectedDate = null;
+            document.getElementById('selectedDateLabel').textContent = translations[language].selectDay || 'Выберите день в календаре';
+            showCalendarView();
+            renderAITab();
+            startTimers();
+            setTimeout(() => { updateWeightChart(); updateBMIDisplay(); }, 300);
+            window.addEventListener('resize', () => { setTimeout(updateWeightChart, 200); });
+        });
+    </script>
+</body>
+</html>
